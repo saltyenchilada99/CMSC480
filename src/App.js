@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
+import { busStopLibrary } from './components/busStop.ts';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -71,7 +72,7 @@ function App() {
       <MapContainer center={[41.012, -76.448]} zoom={15.25}>
         <TileLayer
           attribution='&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}" ext= 'jpg'
+          url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}" ext='jpg'
         />
         {buses.map((bus) => (
           <Marker key={bus.id} position={[bus.lat, bus.lng]}>
@@ -83,6 +84,13 @@ function App() {
               {bus.address && <>Address: {bus.address}<br /></>}
               {bus.driver && <>Driver: {bus.driver}<br /></>}
               Updated: {bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}
+            </Popup>
+          </Marker>
+        ))}
+        {busStopLibrary.map((stop, i) => (
+          <Marker key={i} position={[stop.lat, -stop.long]}>
+            <Popup>
+              <strong>{stop.name}</strong>
             </Popup>
           </Marker>
         ))}
