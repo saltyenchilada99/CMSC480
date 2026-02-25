@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
-import { busStopLibrary } from './components/busStop.ts';
+import { BusStop } from './components/busStop.tsx';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -87,13 +87,7 @@ function App() {
             </Popup>
           </Marker>
         ))}
-        {busStopLibrary.map((stop, i) => (
-          <Marker key={i} position={[stop.lat, -stop.long]}>
-            <Popup>
-              <strong>{stop.name}</strong>
-            </Popup>
-          </Marker>
-        ))}
+        <BusStop/>
       </MapContainer>
     </div>
   );
