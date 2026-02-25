@@ -32,3 +32,18 @@
 .status-badge.offline {
   background-color: #b71c1c;
 }
+
+#body{
+  display: flex;
+}
+
+#toggle{
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  background-color: #FACF96;
+  padding: 7.5em 5em;
+  gap: 2em;
+  font-weight: bold;
+  border-radius: 15%;
+}
