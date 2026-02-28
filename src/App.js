@@ -85,9 +85,9 @@ function App() {
         </header>
         <div id='body'>
           <div id='toggle'>
-            <div class='toggle-item'><input type="checkbox"></input><label>Buses</label></div>
-            <div class='toggle-item'><input type="checkbox"></input><label>Stops</label></div>
-            <div class='toggle-item'><input type="checkbox"></input><label>Routes</label></div>
+            <div className='toggle-item'><input type="checkbox"></input><label>Buses</label></div>
+            <div className='toggle-item'><input type="checkbox"></input><label>Stops</label></div>
+            <div className='toggle-item'><input type="checkbox"></input><label>Routes</label></div>
           </div>
           <MapContainer center={[41.012, -76.448]} zoom={15.25}>
             <TileLayer
