@@ -1,0 +1,15 @@
+# Verizon Connect API Credentials
+# Get these from the Verizon Connect FIM portal: https://fim.us.fleetmatics.com
+VZC_USERNAME=REST_BussingApp_9791@1256321.com
+VZC_PASSWORD=CHIaYZMV
+VZC_APP_ID=fleetmatics-p-us-zZJUMzdTCJUOpqHWChppViCCQu4Xq2klGjRzvZfN
+
+# Server Configuration
+PORT=3001
+
+# Polling Configuration
+# Set to 'false' to disable polling and use webhooks only
+USE_POLLING=true
+
+# Polling interval in milliseconds (30000 = 30 seconds)
+POLL_INTERVAL_MS=30000
