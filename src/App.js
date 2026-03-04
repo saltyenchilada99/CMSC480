@@ -77,6 +77,7 @@ function App() {
 
   const [toggleBus, setShowBuses] = useState(false);
   const [toggleStops, setShowStops] = useState(false);
+  const [toggleUser, setUser] = useState(false);
   
   return (
     <div>
@@ -93,6 +94,8 @@ function App() {
           <div className='toggle-item'><input type="checkbox" id="stops" checked={toggleStops}
   onChange={(e) => setShowStops(e.target.checked)}></input><label>Stops</label></div>
           <div className='toggle-item'><input type="checkbox" id="routes"></input><label>Routes</label></div>
+          <div className='toggle-item'><input type="checkbox" id="user" checked={toggleUser}
+  onChange={(e) => setUser(e.target.checked)}></input><label>User</label></div>
         </div>
         <MapContainer center={[41.012, -76.448]} zoom={15.25}>
           <TileLayer
@@ -100,7 +103,7 @@ function App() {
             url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
             ext="jpg"
           />
-          {userPos && (
+          {toggleUser && userPos && (
             <Marker position={userPos}>
               <Popup>You are here</Popup>
             </Marker>
