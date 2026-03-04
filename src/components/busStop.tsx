@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 class busStop {
     name!: string;
@@ -38,10 +39,11 @@ const busStopLibrary: busStop[] = [{
     img: ''
 }];
 
-export function BusStop() {
+export function BusStop( {toggleStops}: {toggleStops : boolean}) {
+    console.log(toggleStops);
     return (
-        busStopLibrary.map((busStop : busStop, i : number) => (
-            <Marker key= { i } position = { [busStop.lat, -busStop.long]} >
+        toggleStops && busStopLibrary.map((busStop : busStop, i : number) => (
+            <Marker key= { `${i}` } position = { [busStop.lat, -busStop.long]} >
             <Popup>
             <strong>{ busStop.name } </strong>
             </Popup>
