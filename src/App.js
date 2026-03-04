@@ -5,6 +5,9 @@ import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
 import { BusStop } from './components/busStop.tsx';
 import { Route } from './components/route.tsx';
+import { Header } from './components/Header.js';
+import { SubHeader } from './components/SubHeader.js';
+import { Footer } from './components/Footer.js';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -19,6 +22,7 @@ const WS_URL = 'ws://localhost:3001';
 function App() {
   const [buses, setBuses] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
+  const [showUserLocation, setShowUserLocation] = useState(true);
   const wsRef = useRef(null);
   const [userPos, setUserPos] = useState(null);
   useEffect(() => {
@@ -76,26 +80,17 @@ function App() {
   }, []);
 
   return (
-      <div>
-        <header className="app-header">
-          <span>Bloomsburg Campus Bus Tracker</span>
-          <span className={`status-badge ${connectionStatus === 'Live' ? 'live' : 'offline'}`}>
-          {connectionStatus} {buses.length > 0 ? `· ${buses.length} bus${buses.length !== 1 ? 'es' : ''}` : ''}
-        </span>
-        </header>
+      <div className="app-container">
+        <Header connectionStatus={connectionStatus} buses={buses} />
+        <SubHeader onUserToggle={setShowUserLocation} />
         <div id='body'>
-          <div id='toggle'>
-            <div className='toggle-item'><input type="checkbox"></input><label>Buses</label></div>
-            <div className='toggle-item'><input type="checkbox"></input><label>Stops</label></div>
-            <div className='toggle-item'><input type="checkbox"></input><label>Routes</label></div>
-          </div>
           <MapContainer center={[41.012, -76.448]} zoom={15.25}>
             <TileLayer
                 attribution='&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
                 ext="jpg"
             />
-            {userPos && (
+            {userPos && showUserLocation && (
                 <Marker position={userPos}>
                   <Popup>You are here</Popup>
                 </Marker>
@@ -118,6 +113,7 @@ function App() {
             <BusStop />
           </MapContainer>
         </div>
+        <Footer />
       </div>
   );
 }
