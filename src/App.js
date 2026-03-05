@@ -75,11 +75,21 @@ function App() {
     };
   }, []);
 
+  /**
+   * Toggle states for map layers. These control whether the corresponding components are rendered on the map.
+   * - toggleBus: Show/hide bus markers
+   * - toggleStops: Show/hide bus stop markers
+   * - toggleRoutes: Show/hide bus routes
+   * - toggleUser: Show/hide user's current location marker
+   * Each toggle is implemented as a checkbox in the UI, allowing users to customize their map view.
+   * The state variables are passed down as props to the respective components to conditionally render them.
+   * This approach keeps the map interactive and allows users to focus on the information they find most relevant.
+   */
   const [toggleBus, setShowBuses] = useState(true);
   const [toggleStops, setShowStops] = useState(true);
   const [toggleRoutes, setRoutes] = useState(true);
   const [toggleUser, setUser] = useState(true);
-  
+
   return (
     <div>
       <header className="app-header">
@@ -91,13 +101,13 @@ function App() {
       <div id='body'>
         <div id='toggle'>
           <div className='toggle-item'><input type="checkbox" id="busToggle" checked={toggleBus}
-  onChange={(e) => setShowBuses(e.target.checked)}></input><label>Buses</label></div>
+            onChange={(e) => setShowBuses(e.target.checked)}></input><label>Buses</label></div>
           <div className='toggle-item'><input type="checkbox" id="stops" checked={toggleStops}
-  onChange={(e) => setShowStops(e.target.checked)}></input><label>Stops</label></div>
+            onChange={(e) => setShowStops(e.target.checked)}></input><label>Stops</label></div>
           <div className='toggle-item'><input type="checkbox" id="routes" checked={toggleRoutes}
-  onChange={(e) => setRoutes(e.target.checked)}></input><label>Routes</label></div>
+            onChange={(e) => setRoutes(e.target.checked)}></input><label>Routes</label></div>
           <div className='toggle-item'><input type="checkbox" id="user" checked={toggleUser}
-  onChange={(e) => setUser(e.target.checked)}></input><label>User</label></div>
+            onChange={(e) => setUser(e.target.checked)}></input><label>User</label></div>
         </div>
         <MapContainer center={[41.012, -76.448]} zoom={15.25}>
           <TileLayer
@@ -124,8 +134,9 @@ function App() {
             </Marker>
           ))}
 
-          {/* <Route toggleRoutes={toggleRoutes}/>
-          <BusStop id='bus-stop' toggleStops={toggleStops} /> */}
+          /**
+            * Conditional rendering of map layers based on toggle states.
+           */
           {toggleRoutes && <Route />}
           {toggleStops && <BusStop />}
         </MapContainer>
