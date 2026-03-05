@@ -76,7 +76,8 @@ function App() {
   }, []);
 
   const [toggleBus, setShowBuses] = useState(false);
-  const [toggleStops, setShowStops] = useState(false);
+  const [toggleStops, setShowStops] = useState(true);
+  const [toggleRoutes, setRoutes] = useState(false);
   const [toggleUser, setUser] = useState(false);
   
   return (
@@ -93,7 +94,8 @@ function App() {
   onChange={(e) => setShowBuses(e.target.checked)}></input><label>Buses</label></div>
           <div className='toggle-item'><input type="checkbox" id="stops" checked={toggleStops}
   onChange={(e) => setShowStops(e.target.checked)}></input><label>Stops</label></div>
-          <div className='toggle-item'><input type="checkbox" id="routes"></input><label>Routes</label></div>
+          <div className='toggle-item'><input type="checkbox" id="routes" checked={toggleRoutes}
+  onChange={(e) => setRoutes(e.target.checked)}></input><label>Routes</label></div>
           <div className='toggle-item'><input type="checkbox" id="user" checked={toggleUser}
   onChange={(e) => setUser(e.target.checked)}></input><label>User</label></div>
         </div>
@@ -122,9 +124,12 @@ function App() {
             </Marker>
           ))}
 
-          <Route />
-          <BusStop id='bus-stop' toggleStops={toggleStops} />
+          {/* <Route toggleRoutes={toggleRoutes}/>
+          <BusStop id='bus-stop' toggleStops={toggleStops} /> */}
+          {toggleRoutes && <Route />}
+          {toggleStops && <BusStop />}
         </MapContainer>
+
       </div>
     </div>
   );

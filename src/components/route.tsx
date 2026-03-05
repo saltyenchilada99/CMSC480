@@ -12,7 +12,7 @@ const stops: LatLng[] = [
     [41.01640, -76.44624], // MOA
 ];
 
-export function Route() {
+export function Route(toggleRoutes: {toggleRoutes: boolean}) {
     const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
 
     useEffect(() => {
@@ -49,7 +49,7 @@ export function Route() {
                 />
             )}
 
-            {stops.map((stop, idx) => (
+            {toggleRoutes && stops.map((stop, idx) => (
                 <Marker key={idx} position={stop}>
                     <Popup>Stop {idx + 1}</Popup>
                 </Marker>
