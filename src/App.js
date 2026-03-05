@@ -75,10 +75,10 @@ function App() {
     };
   }, []);
 
-  const [toggleBus, setShowBuses] = useState(false);
+  const [toggleBus, setShowBuses] = useState(true);
   const [toggleStops, setShowStops] = useState(true);
-  const [toggleRoutes, setRoutes] = useState(false);
-  const [toggleUser, setUser] = useState(false);
+  const [toggleRoutes, setRoutes] = useState(true);
+  const [toggleUser, setUser] = useState(true);
   
   return (
     <div>
