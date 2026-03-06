@@ -4,6 +4,16 @@ import '../styles/Header.css';
 export function Header({ connectionStatus, buses }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
+  // add/remove class on body for modal open state
+  React.useEffect(() => {
+    if (showScheduleModal) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [showScheduleModal]);
+
   return (
     <header className="app-header">
       <div className="header-container">

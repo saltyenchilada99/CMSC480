@@ -289,7 +289,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 9999; /* ensure above leaflet controls */
   animation: fadeIn 0.3s ease;
 }
 
@@ -302,6 +302,15 @@
   }
 }
 
+/* when modal is open, hide leaflet controls */
+body.modal-open .leaflet-control,
+body.modal-open .leaflet-bottom,
+body.modal-open .leaflet-top {
+  opacity: 0 !important;
+  transition: opacity 0.2s ease;
+  pointer-events: none !important;
+}
+
 .modal-content {
   background-color: white;
   border-radius: 8px;
@@ -311,6 +320,7 @@
   max-height: 80vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+  z-index: 10000; /* stay on top of all other elements */
 }
 
 @keyframes slideUp {
