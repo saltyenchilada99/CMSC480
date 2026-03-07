@@ -35,8 +35,8 @@ const busStopLibrary: busStop[] = [{
     key: 'BS-4'
 }, {
     name: "Orange Lot",
-    lat: 41.01745,
-    long: 76.45038,
+    lat: 41.01820,
+    long: 76.448865,
     img: '',
     key: 'BS-5'
 }, {
