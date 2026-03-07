@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
 import { BusStop } from './components/busStop.tsx';
 import { Route } from './components/route.tsx';
+import { GetBusIcon } from './components/busMarkers.tsx';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -87,7 +88,7 @@ function App() {
    */
   const [toggleBus, setShowBuses] = useState(true);
   const [toggleStops, setShowStops] = useState(true);
-  const [toggleRoutes, setRoutes] = useState(true);
+  const [toggleRoutes, setRoutes] = useState(false);
   const [toggleUser, setUser] = useState(true);
 
   return (
@@ -121,7 +122,7 @@ function App() {
             </Marker>
           )}
           {toggleBus && buses.map((bus) => (
-            <Marker key={bus.id} position={[bus.lat, bus.lng]} className="bus-marker">
+            <Marker key={bus.id} position={[bus.lat - 0.00005, bus.lng]} className="bus-marker" icon={GetBusIcon("busIcon")}>
               <Popup>
                 <strong>{bus.name || bus.id}</strong><br />
                 Status: {bus.status}<br />
