@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
+import { GetBusIcon } from './components/busMarkers.tsx';
 import { BusStop } from './components/busStop.tsx';
 import { Route } from './components/route.tsx';
 import { Header } from './components/Header.js';
@@ -106,7 +107,11 @@ function App() {
                 </Marker>
             )}
             {buses.map((bus) => (
-                <Marker key={bus.id} position={[bus.lat, bus.lng]}>
+                <Marker
+                  key={bus.id}
+                  position={[bus.lat, bus.lng]}
+                  icon={GetBusIcon("busIcon")}
+                >
                   <Popup>
                     <strong>{bus.name || bus.id}</strong><br />
                     Status: {bus.status}<br />
