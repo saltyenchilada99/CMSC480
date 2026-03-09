@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
-import { GetBusIcon } from './components/busMarkers.tsx';
+import { GetBusIcon } from './components/busMarkers';
 import { BusStop } from './components/busStop.tsx';
 import { Route } from './components/route.tsx';
 import { Header } from './components/Header.js';
@@ -23,6 +23,9 @@ const WS_URL = 'ws://localhost:3001';
 function App() {
   const [buses, setBuses] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
+  const [showBuses, setShowBuses] = useState(true);
+  const [showStops, setShowStops] = useState(true);
+  const [showRoutes, setShowRoutes] = useState(true);
   const [showUserLocation, setShowUserLocation] = useState(true);
   const wsRef = useRef(null);
   const [userPos, setUserPos] = useState(null);
@@ -93,7 +96,12 @@ function App() {
   return (
       <div className="app-container">
         <Header connectionStatus={connectionStatus} buses={buses} />
-        <SubHeader onUserToggle={setShowUserLocation} />
+        <SubHeader
+          onBusesToggle={setShowBuses}
+          onStopsToggle={setShowStops}
+          onRoutesToggle={setShowRoutes}
+          onUserToggle={setShowUserLocation}
+        />
         <div id='body'>
           <MapContainer center={[41.012, -76.448]} zoom={15.25}>
             <TileLayer
@@ -106,7 +114,7 @@ function App() {
                   <Popup>You are here</Popup>
                 </Marker>
             )}
-            {buses.map((bus) => (
+            {showBuses && buses.map((bus) => (
                 <Marker
                   key={bus.id}
                   position={[bus.lat, bus.lng]}
@@ -124,8 +132,8 @@ function App() {
                 </Marker>
             ))}
 
-            <Route />
-            <BusStop />
+            <Route toggleRoutes={showRoutes} />
+            {showStops && <BusStop />}
           </MapContainer>
         </div>
         <Footer />

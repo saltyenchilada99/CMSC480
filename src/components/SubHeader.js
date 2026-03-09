@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/SubHeader.css';
 
-export function SubHeader({ onUserToggle }) {
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onUserToggle }) {
   const [overlaysVisible, setOverlaysVisible] = useState({
     buses: true,
     stops: true,
@@ -15,8 +15,17 @@ export function SubHeader({ onUserToggle }) {
       [overlay]: !overlaysVisible[overlay],
     };
     setOverlaysVisible(newSettings);
-    
-    // Notify parent component if user toggle changed
+
+    // Notify parent component when a toggle changes
+    if (overlay === 'buses' && onBusesToggle) {
+      onBusesToggle(newSettings.buses);
+    }
+    if (overlay === 'stops' && onStopsToggle) {
+      onStopsToggle(newSettings.stops);
+    }
+    if (overlay === 'routes' && onRoutesToggle) {
+      onRoutesToggle(newSettings.routes);
+    }
     if (overlay === 'user' && onUserToggle) {
       onUserToggle(newSettings.user);
     }

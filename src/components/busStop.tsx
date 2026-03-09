@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { GetBusIcon } from './busMarkers.tsx';
+import { GetBusIcon } from './busMarkers';
 class busStop {
     name!: string;
     lat!: number;

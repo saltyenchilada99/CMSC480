@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Polyline, Marker, Popup } from "react-leaflet";
+import { Polyline } from "react-leaflet";
 
 type LatLng = [number, number];
 
@@ -40,6 +40,9 @@ export function Route({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
 
         fetchRoute();
     }, []);
+
+    if (!toggleRoutes) return null;
+
     return (
         <>
             {routeCoords.length > 0 && (
@@ -48,12 +51,6 @@ export function Route({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
                     pathOptions={{ color: "yellow", weight: 4, opacity: 0.9 }}
                 />
             )}
-
-            {toggleRoutes && stops.map((stop, idx) => (
-                <Marker key={idx} position={stop}>
-                    <Popup>Stop {idx + 1}</Popup>
-                </Marker>
-            ))}
         </>
     );
 }
