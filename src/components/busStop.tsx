@@ -50,10 +50,15 @@ const busStopLibrary: busStop[] = [{
 export function BusStop() {
     return (
         busStopLibrary.map((busStop : busStop, i : number) => (
-            <Marker key= { `${busStop.key}` } position = { [busStop.lat, -busStop.long]} icon={GetBusIcon("busStopIcon")}>
-            <Popup>
-            <strong>{ busStop.name } </strong>
-            </Popup>
+            <Marker
+                key={`${busStop.key}`}
+                position={[busStop.lat, -busStop.long]}
+                icon={GetBusIcon("busStopIcon")}
+                zIndexOffset={500}
+            >
+                <Popup>
+                    <strong>{busStop.name}</strong>
+                </Popup>
             </Marker>
         )));
 }
