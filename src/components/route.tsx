@@ -12,7 +12,7 @@ const stops: LatLng[] = [
     [41.01640, -76.44624], // MOA
 ];
 
-export function Route(toggleRoutes: {toggleRoutes: boolean}) {
+export function Route({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
     const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
 
     useEffect(() => {
