@@ -1,9 +1,9 @@
 import './App.css';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
-import { GetBusIcon } from './components/busMarkers.tsx';
+import {Bus, BusContext} from './components/bus.tsx';
 import { BusStop } from './components/busStop.tsx';
 import { Route } from './components/route.tsx';
 import { Header } from './components/Header.js';
@@ -21,67 +21,12 @@ L.Icon.Default.mergeOptions({
 const WS_URL = 'ws://localhost:3001';
 
 function App() {
-  const [buses, setBuses] = useState([]);
-  const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const [showBuses, setShowBuses] = useState(true);
   const [showStops, setShowStops] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
   const [showUserLocation, setShowUserLocation] = useState(true);
-  const wsRef = useRef(null);
   const [userPos, setUserPos] = useState(null);
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        setUserPos([pos.coords.latitude, pos.coords.longitude]);
-      },
-      (err) => console.error("Geolocation error:", err),
-      { enableHighAccuracy: true }
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
-
-  useEffect(() => {
-    function connect() {
-      const ws = new WebSocket(WS_URL);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setConnectionStatus('Live');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'location_update') {
-            setBuses(data.buses);
-          }
-        } catch (e) {
-          console.error('Failed to parse WebSocket message', e);
-        }
-      };
-
-      ws.onclose = () => {
-        setConnectionStatus('Reconnecting...');
-        setTimeout(connect, 5000);
-      };
-
-      ws.onerror = () => {
-        setConnectionStatus('Error');
-        ws.close();
-      };
-    }
-
-    connect();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.onclose = null; // prevent reconnect on unmount
-        wsRef.current.close();
-      }
-    };
-  }, []);
+  const { buses, connectionStatus } = useContext(BusContext);
 
   /**
    * Toggle states for map layers. These control whether the corresponding components are rendered on the map.
@@ -114,23 +59,7 @@ function App() {
                   <Popup>You are here</Popup>
                 </Marker>
             )}
-            {showBuses && buses.map((bus) => (
-                <Marker
-                  key={bus.id}
-                  position={[bus.lat, bus.lng]}
-                  icon={GetBusIcon("busIcon")}
-                >
-                  <Popup>
-                    <strong>{bus.name || bus.id}</strong><br />
-                    Status: {bus.status}<br />
-                    Speed: {bus.speed} mph<br />
-                    Heading: {bus.heading}°<br />
-                    {bus.address && <>Address: {bus.address}<br /></>}
-                    {bus.driver && <>Driver: {bus.driver}<br /></>}
-                    Updated: {bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}
-                  </Popup>
-                </Marker>
-            ))}
+            {showBuses && <Bus />}
 
             <Route toggleRoutes={showRoutes} />
             {showStops && <BusStop />}
