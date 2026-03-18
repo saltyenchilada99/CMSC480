@@ -5,7 +5,9 @@ import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
 import { GetBusIcon } from './components/busMarkers.tsx';
 import { BusStop } from './components/busStop.tsx';
-import { Route } from './components/route.tsx';
+import { CampusLoopRoute } from './components/routes/campusLoopRoute.tsx';
+import { DowntownLoopRoute } from './components/routes/downtownLoopRoute.tsx';
+import { WalmartTripRoute } from './components/routes/walmartTripRoute.tsx';
 import { Header } from './components/Header.js';
 import { SubHeader } from './components/SubHeader.js';
 import { Footer } from './components/Footer.js';
@@ -132,7 +134,9 @@ function App() {
                 </Marker>
             ))}
 
-            <Route toggleRoutes={showRoutes} />
+            <CampusLoopRoute toggleRoutes={showRoutes} />
+            <DowntownLoopRoute toggleRoutes={showRoutes} />
+            <WalmartTripRoute toggleRoutes={showRoutes} />
             {showStops && <BusStop />}
           </MapContainer>
         </div>
