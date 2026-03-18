@@ -4,15 +4,16 @@ import { Polyline } from "react-leaflet";
 type LatLng = [number, number];
 
 const stops: LatLng[] = [
-    [41.00870, -76.44525], // Library
-    [41.01434, -76.44654], // MPA
-    [41.01530, -76.44961], // Athletic Complex
-    [41.01740, -76.45308], // JKA
-    [41.01751, -76.45038], // Orange Lot
-    [41.01640, -76.44624], // MOA
+    [41.00864, -76.44540], // Arts & Administration Building
+    [41.01434, -76.44654], // Montgomery Place Apartments (MPA)
+    [41.01640, -76.44624], // Mount Olympus Apartments (MOA)
+    [41.01740, -76.45308], // Jessica Kozloff Apartments (JKA)
+    [41.01525, -76.44961], // Nelson Field House
+    [41.01751, -76.45038], // Orange Lot (Upper Campus Parking)
+    [41.00864, -76.44540], // Back to A&A (closes the loop)
 ];
 
-export function Route({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
+export function CampusLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
     const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
 
     useEffect(() => {
@@ -22,7 +23,7 @@ export function Route({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
                     .map(([lat, lng]) => `${lng},${lat}`)
                     .join(";");
                 // URL below MUST be on single line
-                const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson`;
+                const url = `https://router.project-osrm.org/route/v1/foot/${coordString}?overview=full&geometries=geojson`;
                 const res = await fetch(url);
                 const json = await res.json();
 
@@ -48,7 +49,7 @@ export function Route({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
             {routeCoords.length > 0 && (
                 <Polyline
                     positions={routeCoords}
-                    pathOptions={{ color: "yellow", weight: 4, opacity: 0.9 }}
+                    pathOptions={{ color: "yellow", weight: 4, opacity: 0.6 }}
                 />
             )}
         </>

@@ -6,51 +6,62 @@ export function Footer() {
     <footer className="app-footer">
       <div className="footer-content">
         <div className="footer-section">
-          <h4>About</h4>
+          <h4>
+            <strong>Our Locations</strong><br />
+          </h4>
           <ul>
-            <li><a href="#about">About Bloomsburg</a></li>
-            <li><a href="#transit">Transit System</a></li>
-            <li><a href="#history">History</a></li>
-            <li><a href="#careers">Careers</a></li>
+            <li><a href="https://www.commonwealthu.edu/campus-life/bloomsburg">Bloomsburg</a></li>
+            <li><a href="https://www.commonwealthu.edu/campus-life/lock-haven">Lock Haven</a></li>
+            <li><a href="https://www.commonwealthu.edu/campus-life/mansfield">Mansfield</a></li>
+            <li><a href="https://www.commonwealthu.edu/campus-life/clearfield">Clearfield</a></li>
           </ul>
         </div>
 
         <div className="footer-section">
-          <h4>Resources</h4>
+          <h4>
+            <strong>Helpful Links</strong><br />
+          </h4>
           <ul>
-            <li><a href="#schedules">Bus Schedules</a></li>
-            <li><a href="#routes">Routes & Maps</a></li>
-            <li><a href="#faq">FAQ</a></li>
-            <li><a href="#accessibility">Accessibility</a></li>
+            <li><a href="https://www.commonwealthu.edu/people-directory">Faculty & Staff Directory</a></li>
+            <li><a href="https://www.commonwealthu.edu/offices-directory">Offices & Departments</a></li>
+            <li><a href="https://www.commonwealthu.edu/my-commonwealthu">My CommonwealthU</a></li>
+            <li><a href="https://library.commonwealthu.edu/home">Library</a></li>
+            <li><a href="https://www.commonwealthu.edu/offices-directory/human-resources/hrconnect">HRConnect</a></li>
+            <li><a href="https://portal.passhe.edu/irj/portal">ESS and eTime</a></li>
+            <li><a href="https://commonwealthu.peopleadmin.com/">Employment Opportunities</a></li>
+            <li><a href="https://www.commonwealthu.edu/alert/emergency-alert-notification-system">CU Alert</a></li>
+            <li><a href="https://www.commonwealthu.edu/social-media">Social Media</a></li>
+            <li><a href="https://www.commonwealthu.edu/forms/report-broken-link">Report a Website Problem</a></li>
           </ul>
         </div>
 
         <div className="footer-section">
-          <h4>Contact</h4>
+          <h4>
+            <strong>Legal</strong><br />
+          </h4>
           <ul>
-            <li>
-              <strong>Bloomsburg University</strong><br />
-              400 East Second Street<br />
-              Bloomsburg, PA 17815
-            </li>
-            <li><a href="tel:5704896000">570-389-4000</a></li>
-            <li><a href="mailto:info@bloomu.edu">info@bloomu.edu</a></li>
+            <li><a href="https://www.commonwealthu.edu/about/accreditation">Accreditation</a></li>
+            <li><a href="https://www.commonwealthu.edu/offices-directory/university-police/annual-security-report">Annual Security and Fire Safety Reports</a></li>
+            <li><a href="https://secure.ethicspoint.com/domain/media/en/gui/37117/index.html">Fraud, Waste & Abuse Hotline</a></li>
+            <li><a href="https://www.commonwealthu.edu/offices-directory/institutional-effectiveness/compliance/right-to-know-requests">Right-To-Know</a></li>
+            <li><a href="https://www.commonwealthu.edu/about/consumer-information">Consumer Information</a></li>
+            <li><a href="https://www.commonwealthu.edu/offices-directory/title-ix">Title IX</a></li>
           </ul>
         </div>
 
         <div className="footer-section">
           <h4>Follow Us</h4>
           <div className="social-links">
-            <a href="#facebook" className="social-icon" title="Facebook">
+            <a href="https://www.facebook.com/bloomsburgu/" className="social-icon" title="Facebook">
               <span>f</span>
             </a>
-            <a href="#twitter" className="social-icon" title="Twitter">
+            <a href="https://x.com/BloomsburgU" className="social-icon" title="Twitter">
               <span>𝕏</span>
             </a>
-            <a href="#instagram" className="social-icon" title="Instagram">
+            <a href="https://www.instagram.com/bloomsburgu/" className="social-icon" title="Instagram">
               <span>📷</span>
             </a>
-            <a href="#linkedin" className="social-icon" title="LinkedIn">
+            <a href="https://www.linkedin.com/school/cu-bloomsburg/posts/?feedView=all" className="social-icon" title="LinkedIn">
               <span>in</span>
             </a>
           </div>
@@ -58,17 +69,13 @@ export function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <div className="footer-links">
-          <a href="#privacy">Privacy Policy</a>
-          <span className="divider">|</span>
-          <a href="#terms">Terms of Service</a>
-          <span className="divider">|</span>
-          <a href="#accessibility">Accessibility</a>
-          <span className="divider">|</span>
-          <a href="#contact">Contact Us</a>
-        </div>
         <div className="copyright">
-          &copy; {new Date().getFullYear()} Bloomsburg University. All rights reserved.
+          &copy; {new Date().getFullYear()} Commonwealth University of Pennsylvania
+        </div>
+        <div className="footer-links">
+          <a href="https://www.commonwealthu.edu/privacy-policy">Privacy</a>
+          <div className="divider"></div>
+          <a href="https://www.commonwealthu.edu/accessibility">Accessibility</a>
         </div>
       </div>
     </footer>
