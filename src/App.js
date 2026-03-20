@@ -68,7 +68,8 @@ function App() {
                 </Marker>
             )}
             {showBuses && <Bus />}
-
+            {showAcademics && <Academic />}
+            {showDorms && <Dorm />}
             <CampusLoopRoute toggleRoutes={showRoutes} />
             <DowntownLoopRoute toggleRoutes={showRoutes} />
             <WalmartTripRoute toggleRoutes={showRoutes} />
