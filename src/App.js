@@ -9,6 +9,8 @@ import { Route } from './components/route.tsx';
 import { Header } from './components/Header.js';
 import { SubHeader } from './components/SubHeader.js';
 import { Footer } from './components/Footer.js';
+import { Academic } from './components/Academic.tsx';
+import { Dorm } from './components/dorm.tsx';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,6 +29,8 @@ function App() {
   const [showUserLocation, setShowUserLocation] = useState(true);
   const [userPos, setUserPos] = useState(null);
   const { buses, connectionStatus } = useContext(BusContext);
+  const [showAcademics, setShowAcademics] = useState(false);
+  const [showDorms, setShowDorms] = useState(false);
 
   /**
    * Toggle states for map layers. These control whether the corresponding components are rendered on the map.
@@ -46,6 +50,8 @@ function App() {
           onStopsToggle={setShowStops}
           onRoutesToggle={setShowRoutes}
           onUserToggle={setShowUserLocation}
+          onAcademicsToggle={setShowAcademics}
+          onDormsToggle={setShowDorms}
         />
         <div id='body'>
           <MapContainer center={[41.012, -76.448]} zoom={15.25}>
@@ -62,6 +68,8 @@ function App() {
             {showBuses && <Bus />}
 
             <Route toggleRoutes={showRoutes} />
+            {showAcademics && <Academic />}
+            {showDorms && <Dorm />}
             {showStops && <BusStop />}
           </MapContainer>
         </div>
