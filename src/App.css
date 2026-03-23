@@ -1,34 +1,32 @@
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #6e1020 0%, #8b1538 100%);
+}
+
 .leaflet-container {
   height: 75vh;
   width: 75%;
-  margin: auto;
-  margin-top: 1rem;
+  border: 4px solid #DAA520;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.app-header {
+#body {
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 2rem;
-  background-color: #6e1020;
-  color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-.status-badge {
-  font-size: 0.85rem;
-  font-weight: normal;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.status-badge.live {
-  background-color: #2e7d32;
-}
-
-.status-badge.offline {
-  background-color: #b71c1c;
+  padding: 1rem 0;
 }
