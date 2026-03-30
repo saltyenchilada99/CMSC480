@@ -13,7 +13,16 @@ export function GetBusIcon(icon:string) {
     });
 }
 
-export function GetAcademicIcon(icon:string) {
+export function GetColoredBusStopIcon(_colors: string[], busStopImgUrl: string) {
+    return L.icon({
+        iconUrl: busStopImgUrl,
+        iconSize: [128, 95],
+        iconAnchor: [64, 85],
+        popupAnchor: [0, -85],
+    });
+}
+
+export function GetAcademicIcon(_icon:string) {
     return L.icon({
         iconUrl: academic,
         iconSize: [128, 95],
@@ -21,7 +30,7 @@ export function GetAcademicIcon(icon:string) {
     });
 }
 
-export function GetDormIcon(icon:string) {
+export function GetDormIcon(_icon:string) {
     return L.icon({
         iconUrl: dorm,
         iconSize: [128, 95],

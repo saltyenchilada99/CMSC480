@@ -49,7 +49,7 @@ export function DowntownLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boo
             {routeCoords.length > 0 && (
                 <Polyline
                     positions={routeCoords}
-                    pathOptions={{ color: "red", weight: 4, opacity: 0.6 }}
+                    pathOptions={{ color: "#6D0026", weight: 4, opacity: 0.6 }}
                 />
             )}
         </>
