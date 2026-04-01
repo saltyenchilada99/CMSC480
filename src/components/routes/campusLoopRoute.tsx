@@ -49,7 +49,7 @@ export function CampusLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boole
             {routeCoords.length > 0 && (
                 <Polyline
                     positions={routeCoords}
-                    pathOptions={{ color: "yellow", weight: 4, opacity: 0.6 }}
+                    pathOptions={{ color: "#B8860B", weight: 4, opacity: 0.6 }}
                 />
             )}
         </>

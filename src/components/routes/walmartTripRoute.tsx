@@ -44,7 +44,7 @@ export function WalmartTripRoute({ toggleRoutes = false }: { toggleRoutes?: bool
             {routeCoords.length > 0 && (
                 <Polyline
                     positions={routeCoords}
-                    pathOptions={{ color: "cyan", weight: 4, opacity: 0.6 }}
+                    pathOptions={{ color: "#0057B8", weight: 4, opacity: 0.6 }}
                 />
             )}
         </>
