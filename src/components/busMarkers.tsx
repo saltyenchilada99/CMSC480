@@ -30,13 +30,8 @@ export function GetBusIcon(icon:string) {
     return buildIcon(imgURL);
 }
 
-export function GetColoredBusStopIcon(_colors: string[], busStopImgUrl: string) {
-    return L.icon({
-        iconUrl: busStopImgUrl,
-        iconSize: [128, 95],
-        iconAnchor: [64, 85],
-        popupAnchor: [0, -85],
-    });
+export function GetBusStopIcon() {
+    return buildIcon(busStop);
 }
 
 export function GetAcademicIcon(icon:string) {

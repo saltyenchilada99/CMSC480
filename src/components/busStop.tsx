@@ -1,8 +1,7 @@
 import { Marker, Popup } from 'react-leaflet';
 // @ts-ignore
-import { GetColoredBusStopIcon } from './busMarkers.tsx';
-// @ts-ignore
-import busStopImg from './bus_stop_icon.png';
+import { GetBusStopIcon } from './busMarkers.tsx';
+
 
 type RouteInfo = {
     name: string;
@@ -10,9 +9,9 @@ type RouteInfo = {
 };
 
 const ROUTES: Record<string, RouteInfo> = {
-    campus: { name: "Campus Loop", color: "#B8860B" },
-    downtown: { name: "Downtown Loop", color: "#6D0026" },
-    walmart: { name: "Walmart Trip", color: "#0057B8" },
+    campus:   { name: "Campus Loop",    color: "#B8860B" },
+    downtown: { name: "Downtown Loop",  color: "#6D0026" },
+    walmart:  { name: "Walmart Trip",   color: "#0057B8" },
 };
 
 const STOP_ROUTES: Record<string, RouteInfo[]> = {
@@ -30,7 +29,6 @@ const STOP_ROUTES: Record<string, RouteInfo[]> = {
     'BS-12': [ROUTES.downtown],
     'BS-13': [ROUTES.downtown],
 };
-
 class busStop {
     name!: string;
     lat!: number;
@@ -165,7 +163,7 @@ export function BusStop() {
             <Marker
                 key={`${busStop.key}`}
                 position={[busStop.lat, -busStop.long]}
-                icon={GetColoredBusStopIcon((STOP_ROUTES[busStop.key] ?? []).map(r => r.color), busStopImg)}
+                icon={GetBusStopIcon()}
                 zIndexOffset={500}
             >
                 <Popup>
