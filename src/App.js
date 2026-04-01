@@ -28,6 +28,11 @@ function App() {
   const [showBuses, setShowBuses] = useState(true);
   const [showStops, setShowStops] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
+  const [routeVisibility, setRouteVisibility] = useState({
+    campus: true,
+    downtown: true,
+    walmart: true,
+  });
   const [showUserLocation, setShowUserLocation] = useState(true);
   const [userPos, setUserPos] = useState(null);
   const { buses, connectionStatus } = useContext(BusContext);
@@ -51,6 +56,7 @@ function App() {
           onBusesToggle={setShowBuses}
           onStopsToggle={setShowStops}
           onRoutesToggle={setShowRoutes}
+          onRouteOptionsToggle={setRouteVisibility}
           onUserToggle={setShowUserLocation}
           onAcademicsToggle={setShowAcademics}
           onDormsToggle={setShowDorms}
@@ -70,9 +76,9 @@ function App() {
             {showBuses && <Bus />}
             {showAcademics && <Academic />}
             {showDorms && <Dorm />}
-            <CampusLoopRoute toggleRoutes={showRoutes} />
-            <DowntownLoopRoute toggleRoutes={showRoutes} />
-            <WalmartTripRoute toggleRoutes={showRoutes} />
+            <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
+            <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
+            <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
             {showStops && <BusStop />}
           </MapContainer>
         </div>
