@@ -30,3 +30,10 @@ html, body, #root {
   align-items: center;
   padding: 1rem 0;
 }
+
+.marker-pin-icon {
+  background: transparent !important;
+  border: 0 !important;
+  overflow: visible !important;
+}
+

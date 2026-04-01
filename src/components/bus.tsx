@@ -72,6 +72,7 @@ export function Bus() {
             key={bus.id}
             position={[bus.lat, bus.lng]}
             icon={GetBusIcon("busIcon")}
+            zIndexOffset={1000}
           >
             <Popup>
               <strong>{bus.name || bus.id}</strong><br />
