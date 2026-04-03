@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import '../styles/SubHeader.css';
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onUserToggle }) {
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onUserToggle, onAcademicsToggle, onDormsToggle}) {
   const [overlaysVisible, setOverlaysVisible] = useState({
     buses: true,
     stops: true,
     routes: true,
-    user: true,
+    user: false,
+    academics: false,
+    dorms: false
   });
 
   const handleToggle = (overlay) => {
@@ -28,6 +30,12 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onUser
     }
     if (overlay === 'user' && onUserToggle) {
       onUserToggle(newSettings.user);
+    }
+    if (overlay === 'academics' && onAcademicsToggle) {
+      onAcademicsToggle(newSettings.academics);
+    }
+    if (overlay === 'dorms' && onDormsToggle) {
+      onDormsToggle(newSettings.dorms);
     }
   };
 
@@ -68,6 +76,22 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onUser
               onChange={() => handleToggle('user')}
             />
             <span>My Location</span>
+          </label>
+          <label className="control-item">
+            <input
+              type="checkbox"
+              checked={overlaysVisible.academics}
+              onChange={() => handleToggle('academics')}
+            />
+            <span>Academics</span>
+          </label>
+          <label className="control-item">
+            <input
+              type="checkbox"
+              checked={overlaysVisible.dorms}
+              onChange={() => handleToggle('dorms')}
+            />
+            <span>Dorms</span>
           </label>
         </div>
       </div>

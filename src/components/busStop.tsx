@@ -66,32 +66,14 @@ const busStopLibrary: busStop[] = [{
     img: '/busStopImages/mount_olympus_apartments.png',
     key: 'BS-6'
 }, {
-    name: "M&GA",
-    lat: 41.00401,
-    long: 76.45426,
-    desc: 'A series of penthouse style apartments, the Maroon & Gold Apartment Building offers a good ' +
-        'view and fine, local shopping in downtown Bloomsburg.',
-    location: 'Located on the corner of East Main ST & Catherine ST',
-    img: '/busStopImages/maroon_and_gold_apartments.png',
-    key: 'BS-7'
-}, {
-    name: "WHA",
-    lat: 41.00708,
-    long: 76.45697,
-    desc: 'In terms of off-campus Housing, The Warhurst Apartments are a good choice for private living ' +
-        'around the campus.',
-    location: 'Located on the Corner of Glenn Ave & Iron ST',
-    img: '/busStopImages/warhurst_apartments.png',
-    key: 'BS-8'
-}, {
     name: "GAA",
-    lat: 41.00752,
-    long: 76.45689,
+    lat: 41.00688,
+    long: 76.45747,
     desc: 'A fine choice for off-campus Housing, the Glenn Avenue Apartments offers luxury housing for ' +
         'students as well as modern amenities.',
-    location: 'Located on 203 Glenn Ave',
-    img: '/busStopImages/glenn_avenue_apartments.png',
-    key: 'BS-9'
+    location: 'Located on the Corner of Glenn Ave & Iron ST',
+    img: '/busStopImages/warhurst_apartments.png',
+    key: 'BS-7'
 }, {
     name: "Wal‑Mart",
     lat: 41.00872,
@@ -100,16 +82,16 @@ const busStopLibrary: busStop[] = [{
         'luxuries required to get through the day-by-day living at Bloomsburg University.',
     location: 'Located at Buckhorn Plaza, 48 Plaza DR',
     img: '/busStopImages/bloomsburg_walmart.png',
-    key: 'BS-10'
+    key: 'BS-8'
 }, {
     name: "McCormick Center",
-    lat: 41.00880,
-    long: 76.44723,
+    lat: 41.00925,
+    long: 76.44673,
     desc: 'The McCormick Center for the bus service is the gateway to Downtown Bloomsburg, ' +
         'providing a direct link to the shopping centers and living quarters.',
     location: 'Located at 400 E Second ST',
     img: '/busStopImages/mccormick_center.png',
-    key: 'BS-11'
+    key: 'BS-9'
 }, {
     name: "Fountain",
     lat: 41.00268,
@@ -118,16 +100,16 @@ const busStopLibrary: busStop[] = [{
         'between the University and any other living quarters not directly linked to Bloomsburg University.',
     location: 'Located at 157-199 Market ST',
     img: '/busStopImages/david_stroup_fountain.png',
-    key: 'BS-12'
+    key: 'BS-10'
 }, {
     name: "OSHA",
-    lat: 41.00422,
-    long: 76.45687,
+    lat: 41.00461,
+    long: 76.45677,
     desc: 'The Housing of Choice, the Old School House Apartment Complex provides students and teaching ' +
         'staff alike the best choice for housing, while being comfortably situated between the neighboring shops.',
     location: 'Located on 50 E 1st ST',
     img: '/busStopImages/old_school_house_apartments.png',
-    key: 'BS-13'
+    key: 'BS-11'
 }];
 
 export function BusStop() {

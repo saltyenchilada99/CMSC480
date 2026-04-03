@@ -78,6 +78,11 @@ export interface VehicleLocation {
     Address?:      string;
     Driver?:       string;
     GeoFenceName?: string;
+    RouteName?: string;
+    IsSmoothed?: boolean;
+    DisplayTimestamp?: string;
+    RawLastUpdated?: string;
+    DistanceToRouteMeters?: number;
 }
 
 /** Simplified vehicle status the Reveal API exposes */
