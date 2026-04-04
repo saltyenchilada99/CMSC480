@@ -12,35 +12,29 @@ interface BusSample {
 }
 
 export interface FluidTrackingOptions {
-    delayMs?: number;
+    interpolationWindowMs?: number;
     maxSampleAgeMs?: number;
     maxFutureSkewMs?: number;
     routeCaptureDistanceMeters?: number;
     routeReleaseDistanceMeters?: number;
-    adaptiveDelayBufferMs?: number;
-    minInterpolationDurationMs?: number;
 }
 
 export class FluidTrackingEngine {
     private readonly routes: BusRoute[];
-    private readonly delayMs: number;
+    private readonly interpolationWindowMs: number;
     private readonly maxSampleAgeMs: number;
     private readonly maxFutureSkewMs: number;
     private readonly routeCaptureDistanceMeters: number;
     private readonly routeReleaseDistanceMeters: number;
-    private readonly adaptiveDelayBufferMs: number;
-    private readonly minInterpolationDurationMs: number;
     private readonly historyByBus = new Map<string, BusSample[]>();
 
     constructor(routes: BusRoute[], options: FluidTrackingOptions = {}) {
         this.routes = routes;
-        this.delayMs = options.delayMs ?? 30_000;
+        this.interpolationWindowMs = options.interpolationWindowMs ?? 30_000;
         this.maxSampleAgeMs = options.maxSampleAgeMs ?? 10 * 60 * 1000;
         this.maxFutureSkewMs = options.maxFutureSkewMs ?? 60_000;
         this.routeCaptureDistanceMeters = options.routeCaptureDistanceMeters ?? 225;
         this.routeReleaseDistanceMeters = options.routeReleaseDistanceMeters ?? 325;
-        this.adaptiveDelayBufferMs = options.adaptiveDelayBufferMs ?? 2_000;
-        this.minInterpolationDurationMs = options.minInterpolationDurationMs ?? 30_000;
     }
 
     ingestLocations(locations: VehicleLocation[]): void {
@@ -167,61 +161,36 @@ export class FluidTrackingEngine {
         this.historyByBus.forEach((samples) => {
             if (samples.length === 0) return;
 
-            const effectiveDelay = this.computeEffectiveDelayMs(samples);
-            const targetTs = nowMs - effectiveDelay;
-
-            const pair = this.findBracketSamples(samples, targetTs);
-            if (!pair) return;
-
-            const { prev, next } = pair;
-
-            if (prev.timestampMs === next.timestampMs) {
-                smoothed.push(this.sampleToDisplayLocation(prev, prev.timestampMs, prev));
+            if (samples.length === 1) {
+                const only = samples[0];
+                smoothed.push(this.sampleToDisplayLocation(only, nowMs, only));
                 return;
             }
 
-            const segmentDurationMs = Math.max(
-                next.timestampMs - prev.timestampMs,
-                this.minInterpolationDurationMs,
-                1
-            );
+            const prev = samples[samples.length - 2];
+            const next = samples[samples.length - 1];
 
-            const ratio = Math.max(0, Math.min(1, (targetTs - prev.timestampMs) / segmentDurationMs));
+            const elapsedSinceLatestMs = Math.max(0, nowMs - next.receivedAtMs);
+            const ratio = Math.max(0, Math.min(1, elapsedSinceLatestMs / this.interpolationWindowMs));
+            const displayTs = prev.timestampMs + (next.timestampMs - prev.timestampMs) * ratio;
 
-            smoothed.push(this.interpolateSamples(prev, next, ratio, targetTs));
+            const interpolated = this.interpolateSamples(prev, next, ratio, displayTs);
+            smoothed.push(this.ensureFiniteCoordinates(interpolated, next, nowMs));
         });
 
         return smoothed;
     }
 
-    private findBracketSamples(samples: BusSample[], targetTs: number): { prev: BusSample; next: BusSample } | null {
-        if (samples.length === 0) return null;
-        if (samples.length === 1) return { prev: samples[0], next: samples[0] };
-
-        let prev = samples[0];
-        let next = samples[samples.length - 1];
-
-        for (let i = 0; i < samples.length; i += 1) {
-            const sample = samples[i];
-            if (sample.timestampMs <= targetTs) {
-                prev = sample;
-            }
-            if (sample.timestampMs >= targetTs) {
-                next = sample;
-                break;
-            }
+    private ensureFiniteCoordinates(candidate: VehicleLocation, fallbackSample: BusSample, displayTs: number): VehicleLocation {
+        const latValid = Number.isFinite(candidate.Latitude);
+        const lngValid = Number.isFinite(candidate.Longitude);
+        if (latValid && lngValid) {
+            return candidate;
         }
 
-        if (targetTs <= samples[0].timestampMs) {
-            return { prev: samples[0], next: samples[0] };
-        }
-
-        if (targetTs >= samples[samples.length - 1].timestampMs) {
-            const last = samples[samples.length - 1];
-            return { prev: last, next: last };
-        }
-
-        return { prev, next };
+        // Never drop a bus from the feed because of interpolation math issues.
+        // Fall back to the latest known raw point for that bus.
+        return this.sampleToDisplayLocation(fallbackSample, displayTs, fallbackSample);
     }
 
     private interpolateSamples(prev: BusSample, next: BusSample, ratio: number, displayTs: number): VehicleLocation {
@@ -245,7 +214,7 @@ export class FluidTrackingEngine {
                 const start = prev.routeProgressMeters;
                 const end = next.routeProgressMeters;
                 const elapsedMs = Math.max(1, next.timestampMs - prev.timestampMs);
-                const delta = this.resolveRouteDeltaMeters(start, end, total, prev, next, elapsedMs);
+                const delta = this.resolveRouteDeltaMeters(start, end, total, prev, next, elapsedMs, route.isLoop);
                 const progress = start + delta * ratio;
                 const snapped = route.interpolateProgress(progress);
                 latitude = snapped.lat;
@@ -294,20 +263,21 @@ export class FluidTrackingEngine {
         totalMeters: number,
         prev: BusSample,
         next: BusSample,
-        elapsedMs: number
+        elapsedMs: number,
+        isLoop: boolean
     ): number {
         if (totalMeters <= 0) {
             return end - start;
         }
 
-        // Use the shortest signed movement around the loop instead of always
-        // wrapping forward. This prevents "speed run then freeze" behavior when
-        // route projection jitters across segment boundaries.
         let delta = end - start;
-        if (delta > totalMeters / 2) {
-            delta -= totalMeters;
-        } else if (delta < -totalMeters / 2) {
-            delta += totalMeters;
+        if (isLoop) {
+            // Use the shortest signed movement around loop routes.
+            if (delta > totalMeters / 2) {
+                delta -= totalMeters;
+            } else if (delta < -totalMeters / 2) {
+                delta += totalMeters;
+            }
         }
 
         // Clamp movement to a physically plausible distance based on bus speed
@@ -322,30 +292,6 @@ export class FluidTrackingEngine {
         }
 
         return delta;
-    }
-
-    private computeEffectiveDelayMs(samples: BusSample[]): number {
-        if (samples.length < 3) {
-            return this.delayMs;
-        }
-
-        const intervals: number[] = [];
-        for (let i = 1; i < samples.length; i += 1) {
-            const diff = samples[i].receivedAtMs - samples[i - 1].receivedAtMs;
-            if (diff > 0) {
-                intervals.push(diff);
-            }
-        }
-
-        if (intervals.length === 0) {
-            return this.delayMs;
-        }
-
-        const sorted = [...intervals].sort((a, b) => a - b);
-        const p90 = sorted[Math.floor((sorted.length - 1) * 0.9)];
-        const recentMax = Math.max(...intervals.slice(-6));
-        const adaptiveDelay = Math.max(p90, recentMax) + this.adaptiveDelayBufferMs;
-        return Math.max(this.delayMs, adaptiveDelay);
     }
 
     private interpolateAngle(startDeg: number, endDeg: number, ratio: number): number {

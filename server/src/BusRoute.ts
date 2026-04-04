@@ -53,12 +53,13 @@ function fromLocalXYMeters(origin: LatLng, local: { x: number; y: number }): Lat
 export class BusRoute {
     readonly name: string;
     readonly boundaryMeters: number;
+    readonly isLoop: boolean;
 
     private readonly path: LatLng[];
     private readonly cumulativeMeters: number[];
     private readonly totalMeters: number;
 
-    constructor(name: string, path: LatLng[], boundaryMeters = 120) {
+    constructor(name: string, path: LatLng[], boundaryMeters = 120, isLoop = true) {
         if (!Array.isArray(path) || path.length < 2) {
             throw new Error(`Route ${name} must contain at least 2 points.`);
         }
@@ -66,6 +67,7 @@ export class BusRoute {
         this.name = name;
         this.path = path;
         this.boundaryMeters = boundaryMeters;
+        this.isLoop = isLoop;
 
         this.cumulativeMeters = [0];
         for (let i = 1; i < path.length; i += 1) {
@@ -119,8 +121,13 @@ export class BusRoute {
             return this.path[0];
         }
 
-        let normalized = progressMeters % this.totalMeters;
-        if (normalized < 0) normalized += this.totalMeters;
+        let normalized: number;
+        if (this.isLoop) {
+            normalized = progressMeters % this.totalMeters;
+            if (normalized < 0) normalized += this.totalMeters;
+        } else {
+            normalized = Math.max(0, Math.min(this.totalMeters, progressMeters));
+        }
 
         for (let i = 1; i < this.cumulativeMeters.length; i += 1) {
             const startProgress = this.cumulativeMeters[i - 1];

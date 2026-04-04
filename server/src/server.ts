@@ -19,76 +19,110 @@ import { FluidTrackingEngine } from './FluidTracking';
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const USE_POLLING = process.env.USE_POLLING !== 'false';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? '30000', 10);
-const DEFAULT_FLUID_DELAY_MS = USE_POLLING ? POLL_INTERVAL_MS + 2_000 : 15_000;
-const FLUID_DELAY_MS = parseInt(process.env.FLUID_DELAY_MS ?? `${DEFAULT_FLUID_DELAY_MS}`, 10);
+const DEFAULT_INTERPOLATION_WINDOW_MS = USE_POLLING ? POLL_INTERVAL_MS : 30_000;
+const INTERPOLATION_WINDOW_MS = parseInt(
+    process.env.FLUID_INTERPOLATION_WINDOW_MS ?? process.env.FLUID_DELAY_MS ?? `${DEFAULT_INTERPOLATION_WINDOW_MS}`,
+    10
+);
 const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVAL_MS ?? '250', 10);
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
-const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
 
-const CAMPUS_LOOP_PATH: LatLng[] = [
-    { lat: 41.008689, lng: -76.445122 },
-    { lat: 41.008084, lng: -76.444735 },
-    { lat: 41.007901, lng: -76.444650 },
-    { lat: 41.008005, lng: -76.444397 },
-    { lat: 41.008775, lng: -76.445007 },
-    { lat: 41.009446, lng: -76.443637 },
-    { lat: 41.011016, lng: -76.443591 },
-    { lat: 41.011372, lng: -76.443490 },
-    { lat: 41.011920, lng: -76.443957 },
-    { lat: 41.012142, lng: -76.444221 },
-    { lat: 41.013202, lng: -76.445012 },
-    { lat: 41.013899, lng: -76.445576 },
-    { lat: 41.014359, lng: -76.446306 },
-    { lat: 41.014700, lng: -76.447179 },
-    { lat: 41.014972, lng: -76.448083 },
-    { lat: 41.015161, lng: -76.449434 },
-    { lat: 41.015346, lng: -76.450629 },
-    { lat: 41.015541, lng: -76.451177 },
-    { lat: 41.015944, lng: -76.451604 },
-    { lat: 41.016433, lng: -76.451834 },
-    { lat: 41.017172, lng: -76.451873 },
-    { lat: 41.017635, lng: -76.450044 },
-    { lat: 41.018164, lng: -76.449194 },
-    { lat: 41.018244, lng: -76.448670 },
-    { lat: 41.018197, lng: -76.447292 },
-    { lat: 41.017802, lng: -76.446596 },
-    { lat: 41.017401, lng: -76.446298 },
-    { lat: 41.016826, lng: -76.446095 },
-    { lat: 41.016325, lng: -76.446204 },
-    { lat: 41.016003, lng: -76.446476 },
-    { lat: 41.015622, lng: -76.447125 },
-    { lat: 41.015390, lng: -76.447695 },
-    { lat: 41.015073, lng: -76.448066 },
-    { lat: 41.014972, lng: -76.448083 },
-    { lat: 41.014700, lng: -76.447179 },
-    { lat: 41.014359, lng: -76.446306 },
-    { lat: 41.013899, lng: -76.445576 },
-    { lat: 41.013202, lng: -76.445012 },
-    { lat: 41.012142, lng: -76.444221 },
-    { lat: 41.011920, lng: -76.443957 },
-    { lat: 41.011372, lng: -76.443490 },
-    { lat: 41.011016, lng: -76.443591 },
-    { lat: 41.009446, lng: -76.443637 },
-    { lat: 41.008775, lng: -76.445007 },
-    { lat: 41.008748, lng: -76.445143 },
-    { lat: 41.008689, lng: -76.445122 }
+type StopCoord = [number, number];
+
+interface RouteSeed {
+    name: string;
+    stops: StopCoord[];
+    boundaryMeters: number;
+    isLoop: boolean;
+}
+
+const ROUTE_SEEDS: RouteSeed[] = [
+    {
+        name: 'Campus Loop',
+        boundaryMeters: 175,
+        isLoop: true,
+        stops: [
+            [41.00864, -76.44540],
+            [41.01434, -76.44654],
+            [41.01640, -76.44624],
+            [41.01740, -76.45308],
+            [41.01525, -76.44961],
+            [41.01751, -76.45038],
+            [41.00864, -76.44540]
+        ]
+    },
+    {
+        name: 'Downtown Loop',
+        boundaryMeters: 175,
+        isLoop: true,
+        stops: [
+            [41.00880, -76.44723],
+            [41.00268, -76.45811],
+            [41.00422, -76.45687],
+            [41.00370, -76.45697],
+            [41.00752, -76.45689],
+            [41.00880, -76.44723]
+        ]
+    },
+    {
+        name: 'Walmart Trip',
+        boundaryMeters: 175,
+        isLoop: false,
+        stops: [
+            [41.00864, -76.44540],
+            [41.00872, -76.48541]
+        ]
+    }
 ];
+
+function stopCoordsToPath(stops: StopCoord[]): LatLng[] {
+    return stops.map(([lat, lng]) => ({ lat, lng }));
+}
+
+async function fetchOsrmPath(stops: StopCoord[]): Promise<LatLng[] | null> {
+    if (stops.length < 2) return null;
+    const coordString = stops.map(([lat, lng]) => `${lng},${lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/foot/${coordString}?overview=full&geometries=geojson`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`OSRM route fetch failed: ${response.status} ${response.statusText}`);
+    }
+
+    const json = await response.json() as { routes?: Array<{ geometry?: { coordinates?: [number, number][] } }> };
+    const coords = json.routes?.[0]?.geometry?.coordinates;
+    if (!coords || coords.length < 2) {
+        return null;
+    }
+
+    return coords.map(([lng, lat]) => ({ lat, lng }));
+}
+
+async function buildRoutes(): Promise<BusRoute[]> {
+    const built: BusRoute[] = [];
+
+    for (const seed of ROUTE_SEEDS) {
+        let path: LatLng[];
+        try {
+            const osrmPath = await fetchOsrmPath(seed.stops);
+            path = osrmPath && osrmPath.length >= 2 ? osrmPath : stopCoordsToPath(seed.stops);
+        } catch (err) {
+            console.warn(`[Routes] Falling back to stop-line path for ${seed.name}:`, err);
+            path = stopCoordsToPath(seed.stops);
+        }
+
+        built.push(new BusRoute(seed.name, path, seed.boundaryMeters, seed.isLoop));
+    }
+
+    return built;
+}
 
 let latestRawLocations: VehicleLocation[] = [];
 let latestDisplayLocations: VehicleLocation[] = [];
 let broadcastTimer: ReturnType<typeof setInterval> | null = null;
-
-const routes: BusRoute[] = [
-    new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, 175)
-];
-
-const fluidTracking = new FluidTrackingEngine(routes, {
-    delayMs: FLUID_DELAY_MS,
-    routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
-    routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
-    adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS
-});
+let routes: BusRoute[] = [];
+let fluidTracking: FluidTrackingEngine | null = null;
 
 const wsClients = new Set<WebSocket>();
 
@@ -116,7 +150,7 @@ function broadcastLocations(locations: VehicleLocation[]): void {
     const message = JSON.stringify({
         type: 'location_update',
         timestamp: new Date().toISOString(),
-        delayedByMs: FLUID_DELAY_MS,
+        delayedByMs: INTERPOLATION_WINDOW_MS,
         buses: locations.map(mapLocationForClient)
     });
 
@@ -129,6 +163,7 @@ function broadcastLocations(locations: VehicleLocation[]): void {
 
 function updateLocations(locations: VehicleLocation[]): void {
     latestRawLocations = locations;
+    if (!fluidTracking) return;
     fluidTracking.ingestLocations(locations);
     latestDisplayLocations = fluidTracking.getDisplayLocations();
     broadcastLocations(latestDisplayLocations);
@@ -160,7 +195,8 @@ app.get('/api/buses', (_req: Request, res: Response) => {
     res.json({
         success: true,
         timestamp: new Date().toISOString(),
-        delayedByMs: FLUID_DELAY_MS,
+        delayedByMs: INTERPOLATION_WINDOW_MS,
+        interpolationWindowMs: INTERPOLATION_WINDOW_MS,
         count: latestDisplayLocations.length,
         rawCount: latestRawLocations.length,
         buses: latestDisplayLocations.map(mapLocationForClient)
@@ -174,11 +210,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
         mode: USE_POLLING ? 'polling' : 'webhook',
         busCount: latestDisplayLocations.length,
         rawBusCount: latestRawLocations.length,
-        smoothingDelayMs: FLUID_DELAY_MS,
+        smoothingDelayMs: INTERPOLATION_WINDOW_MS,
         smoothingBroadcastMs: FLUID_BROADCAST_INTERVAL_MS,
         routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
         routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
-        adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS,
         pollIntervalMs: POLL_INTERVAL_MS,
         routeCount: routes.length,
         wsClients: wsClients.size,
@@ -197,7 +232,8 @@ wss.on('connection', (ws: WebSocket) => {
         ws.send(JSON.stringify({
             type: 'location_update',
             timestamp: new Date().toISOString(),
-            delayedByMs: FLUID_DELAY_MS,
+            delayedByMs: INTERPOLATION_WINDOW_MS,
+            interpolationWindowMs: INTERPOLATION_WINDOW_MS,
             buses: latestDisplayLocations.map(mapLocationForClient)
         }));
     }
@@ -230,8 +266,16 @@ async function startServer() {
         console.log(`[Server] Running on http://localhost:${PORT}`);
         console.log(`[Server] REST API: http://localhost:${PORT}/api/buses`);
         console.log(`[Server] WebSocket: ws://localhost:${PORT}`);
-        console.log(`[Smoothing] Delay: ${FLUID_DELAY_MS}ms, broadcast: ${FLUID_BROADCAST_INTERVAL_MS}ms`);
+        console.log(`[Smoothing] Interpolation window: ${INTERPOLATION_WINDOW_MS}ms, broadcast: ${FLUID_BROADCAST_INTERVAL_MS}ms`);
         console.log(`[Smoothing] Route capture/release: ${ROUTE_CAPTURE_DISTANCE_METERS}m / ${ROUTE_RELEASE_DISTANCE_METERS}m`);
+
+        routes = await buildRoutes();
+        fluidTracking = new FluidTrackingEngine(routes, {
+            interpolationWindowMs: INTERPOLATION_WINDOW_MS,
+            routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
+            routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS
+        });
+        console.log(`[Routes] Loaded ${routes.length} routes for route-lock smoothing`);
 
         if (USE_POLLING) {
             console.log(`[Polling] Starting with interval: ${POLL_INTERVAL_MS / 1000}s`);
@@ -241,6 +285,7 @@ async function startServer() {
         }
 
         broadcastTimer = setInterval(() => {
+            if (!fluidTracking) return;
             latestDisplayLocations = fluidTracking.getDisplayLocations();
             broadcastLocations(latestDisplayLocations);
         }, FLUID_BROADCAST_INTERVAL_MS);
