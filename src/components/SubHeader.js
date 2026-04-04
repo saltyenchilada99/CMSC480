@@ -4,6 +4,7 @@ import busIcon from './bus_icon.png';
 import busStopIcon from './bus_stop_icon.png';
 import academicIcon from './academic_icon.png';
 import dormIcon from './dorm_icon.png';
+import foodIcon from './food_icon.svg';
 
 const DEFAULT_OVERLAYS = {
   buses: true,
@@ -12,6 +13,7 @@ const DEFAULT_OVERLAYS = {
   user: true,
   academics: false,
   dorms: false,
+  food: false,
 };
 
 const DEFAULT_ROUTE_OPTIONS = {
@@ -32,6 +34,26 @@ const ROUTE_LABELS = {
   walmart: 'Walmart Trip',
 };
 
+export const DEFAULT_FOOD_OPTIONS = {
+  'F-1': true, // Scranton Commons
+  'F-2': true, // Kehr Union
+  'F-3': true, // Soltz Hall
+  'F-4': true, // Andruss Library
+  'F-5': true, // Monty's
+  'F-6': true, // Warren SSC
+};
+
+const FOOD_LABELS = {
+  'F-1': 'Scranton Commons',
+  'F-2': 'Kehr Union Building',
+  'F-3': 'Soltz Hall Dining',
+  'F-4': 'Andruss Library',
+  'F-5': "Monty's",
+  'F-6': 'Warren SSC',
+};
+
+const FOOD_DOT_COLOR = '#c0392b';
+
 function Toggle({ checked, onChange }) {
   return (
     <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
@@ -41,17 +63,28 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle }) {
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
+  const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
   const [routesExpanded, setRoutesExpanded] = useState(false);
+  const [foodExpanded, setFoodExpanded] = useState(false);
 
-  const syncMainRouteToggle = (nextRouteOptions) => {
-    const anyEnabled = Object.values(nextRouteOptions).some(Boolean);
+  const syncMainRouteToggle = (nextOptions) => {
+    const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
       if (prev.routes === anyEnabled) return prev;
       if (onRoutesToggle) onRoutesToggle(anyEnabled);
       return { ...prev, routes: anyEnabled };
+    });
+  };
+
+  const syncMainFoodToggle = (nextOptions) => {
+    const anyEnabled = Object.values(nextOptions).some(Boolean);
+    setOverlays((prev) => {
+      if (prev.food === anyEnabled) return prev;
+      if (onFoodToggle) onFoodToggle(anyEnabled);
+      return { ...prev, food: anyEnabled };
     });
   };
 
@@ -71,6 +104,13 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
       if (onRouteOptionsToggle) onRouteOptionsToggle(nextRouteOptions);
       if (!next.routes) setRoutesExpanded(false);
     }
+    if (key === 'food') {
+      if (onFoodToggle) onFoodToggle(next.food);
+      const nextFoodOptions = Object.fromEntries(Object.keys(DEFAULT_FOOD_OPTIONS).map(k => [k, next.food]));
+      setFoodOptions(nextFoodOptions);
+      if (onFoodOptionsToggle) onFoodOptionsToggle(nextFoodOptions);
+      if (!next.food) setFoodExpanded(false);
+    }
   };
 
   const handleRouteOptionToggle = (routeKey) => {
@@ -80,10 +120,19 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     syncMainRouteToggle(next);
   };
 
+  const handleFoodOptionToggle = (foodKey) => {
+    const next = { ...foodOptions, [foodKey]: !foodOptions[foodKey] };
+    setFoodOptions(next);
+    if (onFoodOptionsToggle) onFoodOptionsToggle(next);
+    syncMainFoodToggle(next);
+  };
+
   const handleReset = () => {
     setOverlays(DEFAULT_OVERLAYS);
     setRouteOptions(DEFAULT_ROUTE_OPTIONS);
+    setFoodOptions(DEFAULT_FOOD_OPTIONS);
     setRoutesExpanded(false);
+    setFoodExpanded(false);
     if (onBusesToggle) onBusesToggle(DEFAULT_OVERLAYS.buses);
     if (onStopsToggle) onStopsToggle(DEFAULT_OVERLAYS.stops);
     if (onRoutesToggle) onRoutesToggle(DEFAULT_OVERLAYS.routes);
@@ -91,14 +140,17 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     if (onUserToggle) onUserToggle(DEFAULT_OVERLAYS.user);
     if (onAcademicsToggle) onAcademicsToggle(DEFAULT_OVERLAYS.academics);
     if (onDormsToggle) onDormsToggle(DEFAULT_OVERLAYS.dorms);
+    if (onFoodToggle) onFoodToggle(DEFAULT_OVERLAYS.food);
+    if (onFoodOptionsToggle) onFoodOptionsToggle(DEFAULT_FOOD_OPTIONS);
   };
 
   const layers = [
     { key: 'buses',     img: busIcon,      label: 'Buses' },
     { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
-    { key: 'routes',    icon: '🛣️',        label: 'Routes', expandable: true },
+    { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
     { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
+    { key: 'food',      img: foodIcon,     label: 'Dining' },
     { key: 'user',      icon: '📍',        label: 'My Location' },
   ];
 
@@ -109,52 +161,73 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
         <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
       </div>
       <div className="map-layer-panel-body">
-        {layers.map(({ key, icon, img, label, expandable }) => (
-          <React.Fragment key={key}>
-            <div
-              className="layer-item"
-              onClick={() => {
-                handleToggle(key);
-                if (expandable && !overlays[key]) setRoutesExpanded(false);
-              }}
-            >
-              <div className="layer-item-left">
-                {img
-                  ? <img src={img} alt={label} className="layer-item-icon-img" />
-                  : <span className="layer-item-icon">{icon}</span>
-                }
-                <span className="layer-item-label">{label}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {expandable && overlays[key] && (
-                  <span
-                    style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setRoutesExpanded(p => !p); }}
-                  >
-                    {routesExpanded ? '▾' : '▸'}
-                  </span>
-                )}
-                <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
-              </div>
-            </div>
+        {layers.map(({ key, icon, img, label, expandable }) => {
+          const isExpanded = expandable === 'routes' ? routesExpanded : expandable === 'food' ? foodExpanded : false;
+          const setExpanded = expandable === 'routes' ? setRoutesExpanded : setFoodExpanded;
 
-            {expandable && routesExpanded && overlays[key] && (
-              <div className="route-suboptions">
-                {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
-                  <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
-                    <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
-                    <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
-                    <input
-                      type="checkbox"
-                      checked={routeOptions[routeKey]}
-                      onChange={() => handleRouteOptionToggle(routeKey)}
-                    />
-                  </label>
-                ))}
+          return (
+            <React.Fragment key={key}>
+              <div
+                className="layer-item"
+                onClick={() => {
+                  handleToggle(key);
+                  if (expandable && !overlays[key]) setExpanded(false);
+                }}
+              >
+                <div className="layer-item-left">
+                  {img
+                    ? <img src={img} alt={label} className="layer-item-icon-img" />
+                    : <span className="layer-item-icon">{icon}</span>
+                  }
+                  <span className="layer-item-label">{label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {expandable && overlays[key] && (
+                    <span
+                      style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
+                      onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }}
+                    >
+                      {isExpanded ? '▾' : '▸'}
+                    </span>
+                  )}
+                  <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
+                </div>
               </div>
-            )}
-          </React.Fragment>
-        ))}
+
+              {expandable === 'routes' && isExpanded && overlays[key] && (
+                <div className="route-suboptions">
+                  {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
+                    <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                      <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
+                      <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
+                      <input
+                        type="checkbox"
+                        checked={routeOptions[routeKey]}
+                        onChange={() => handleRouteOptionToggle(routeKey)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {expandable === 'food' && isExpanded && overlays[key] && (
+                <div className="route-suboptions">
+                  {Object.keys(DEFAULT_FOOD_OPTIONS).map((foodKey) => (
+                    <label key={foodKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                      <span className="route-dot" style={{ background: FOOD_DOT_COLOR }} />
+                      <span className="route-suboption-label">{FOOD_LABELS[foodKey]}</span>
+                      <input
+                        type="checkbox"
+                        checked={foodOptions[foodKey]}
+                        onChange={() => handleFoodOptionToggle(foodKey)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
 
         <div className="panel-divider" />
         <button className="panel-reset-btn" onClick={handleReset}>

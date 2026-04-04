@@ -13,6 +13,7 @@ import { SubHeader } from './components/SubHeader.js';
 import { Footer } from './components/Footer.js';
 import { Academic } from './components/Academic.tsx';
 import { Dorm } from './components/dorm.tsx';
+import { Food } from './components/food.tsx';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -32,10 +33,14 @@ function App() {
     walmart: true,
   });
   const [showUserLocation, setShowUserLocation] = useState(true);
-  const [userPos, setUserPos] = useState(null);
+  const [userPos] = useState(null);
   const { buses, connectionStatus } = useContext(BusContext);
   const [showAcademics, setShowAcademics] = useState(false);
   const [showDorms, setShowDorms] = useState(false);
+  const [showFood, setShowFood] = useState(false);
+  const [foodVisibility, setFoodVisibility] = useState({
+    'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
+  });
 
   return (
     <div className="app-container">
@@ -50,6 +55,8 @@ function App() {
           onUserToggle={setShowUserLocation}
           onAcademicsToggle={setShowAcademics}
           onDormsToggle={setShowDorms}
+          onFoodToggle={setShowFood}
+          onFoodOptionsToggle={setFoodVisibility}
         />
         <MapContainer center={[41.012, -76.448]} zoom={15.25}>
           <TileLayer
@@ -65,6 +72,7 @@ function App() {
           {showBuses && <Bus />}
           {showAcademics && <Academic />}
           {showDorms && <Dorm />}
+          {showFood && <Food foodVisibility={foodVisibility} />}
           <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
           <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
           <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
