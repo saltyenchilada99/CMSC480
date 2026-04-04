@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import '../styles/SubHeader.css';
+import busIcon from './bus_icon.png';
+import busStopIcon from './bus_stop_icon.png';
+import academicIcon from './academic_icon.png';
+import dormIcon from './dorm_icon.png';
 
 const DEFAULT_OVERLAYS = {
   buses: true,
@@ -16,93 +20,70 @@ const DEFAULT_ROUTE_OPTIONS = {
   walmart: true,
 };
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle}) {
-  const [overlaysVisible, setOverlaysVisible] = useState(DEFAULT_OVERLAYS);
+const ROUTE_COLORS = {
+  campus: '#B8860B',
+  downtown: '#6D0026',
+  walmart: '#0057B8',
+};
+
+const ROUTE_LABELS = {
+  campus: 'Campus Loop',
+  downtown: 'Downtown Loop',
+  walmart: 'Walmart Trip',
+};
+
+function Toggle({ checked, onChange }) {
+  return (
+    <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
+      <input type="checkbox" checked={checked} onChange={onChange} />
+      <span className="toggle-track" />
+    </label>
+  );
+}
+
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle }) {
+  const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
-  const [showRouteDropdown, setShowRouteDropdown] = useState(false);
+  const [routesExpanded, setRoutesExpanded] = useState(false);
 
   const syncMainRouteToggle = (nextRouteOptions) => {
     const anyEnabled = Object.values(nextRouteOptions).some(Boolean);
-
-    setOverlaysVisible((prev) => {
-      if (prev.routes === anyEnabled) {
-        return prev;
-      }
-
-      if (onRoutesToggle) {
-        onRoutesToggle(anyEnabled);
-      }
-
-      return {
-        ...prev,
-        routes: anyEnabled,
-      };
+    setOverlays((prev) => {
+      if (prev.routes === anyEnabled) return prev;
+      if (onRoutesToggle) onRoutesToggle(anyEnabled);
+      return { ...prev, routes: anyEnabled };
     });
   };
 
-  const handleToggle = (overlay) => {
-    const newSettings = {
-      ...overlaysVisible,
-      [overlay]: !overlaysVisible[overlay],
-    };
-    setOverlaysVisible(newSettings);
+  const handleToggle = (key) => {
+    const next = { ...overlays, [key]: !overlays[key] };
+    setOverlays(next);
 
-    // Notify parent component when a toggle changes
-    if (overlay === 'buses' && onBusesToggle) {
-      onBusesToggle(newSettings.buses);
-    }
-    if (overlay === 'stops' && onStopsToggle) {
-      onStopsToggle(newSettings.stops);
-    }
-    if (overlay === 'routes' && onRoutesToggle) {
-      onRoutesToggle(newSettings.routes);
-
-      const nextRouteOptions = {
-        campus: newSettings.routes,
-        downtown: newSettings.routes,
-        walmart: newSettings.routes,
-      };
+    if (key === 'buses' && onBusesToggle) onBusesToggle(next.buses);
+    if (key === 'stops' && onStopsToggle) onStopsToggle(next.stops);
+    if (key === 'user' && onUserToggle) onUserToggle(next.user);
+    if (key === 'academics' && onAcademicsToggle) onAcademicsToggle(next.academics);
+    if (key === 'dorms' && onDormsToggle) onDormsToggle(next.dorms);
+    if (key === 'routes') {
+      if (onRoutesToggle) onRoutesToggle(next.routes);
+      const nextRouteOptions = { campus: next.routes, downtown: next.routes, walmart: next.routes };
       setRouteOptions(nextRouteOptions);
-
-      if (onRouteOptionsToggle) {
-        onRouteOptionsToggle(nextRouteOptions);
-      }
-
-      if (!newSettings.routes) {
-        setShowRouteDropdown(false);
-      }
-    }
-    if (overlay === 'user' && onUserToggle) {
-      onUserToggle(newSettings.user);
-    }
-    if (overlay === 'academics' && onAcademicsToggle) {
-      onAcademicsToggle(newSettings.academics);
-    }
-    if (overlay === 'dorms' && onDormsToggle) {
-      onDormsToggle(newSettings.dorms);
+      if (onRouteOptionsToggle) onRouteOptionsToggle(nextRouteOptions);
+      if (!next.routes) setRoutesExpanded(false);
     }
   };
 
   const handleRouteOptionToggle = (routeKey) => {
-    const nextRouteOptions = {
-      ...routeOptions,
-      [routeKey]: !routeOptions[routeKey],
-    };
-
-    setRouteOptions(nextRouteOptions);
-
-    if (onRouteOptionsToggle) {
-      onRouteOptionsToggle(nextRouteOptions);
-    }
-
-    syncMainRouteToggle(nextRouteOptions);
+    const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
+    setRouteOptions(next);
+    if (onRouteOptionsToggle) onRouteOptionsToggle(next);
+    syncMainRouteToggle(next);
   };
 
-  const handleResetDefaults = () => {
-    setOverlaysVisible(DEFAULT_OVERLAYS);
+  const handleReset = () => {
+    setOverlays(DEFAULT_OVERLAYS);
     setRouteOptions(DEFAULT_ROUTE_OPTIONS);
-    setShowRouteDropdown(false);
-
+    setRoutesExpanded(false);
     if (onBusesToggle) onBusesToggle(DEFAULT_OVERLAYS.buses);
     if (onStopsToggle) onStopsToggle(DEFAULT_OVERLAYS.stops);
     if (onRoutesToggle) onRoutesToggle(DEFAULT_OVERLAYS.routes);
@@ -112,102 +93,73 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     if (onDormsToggle) onDormsToggle(DEFAULT_OVERLAYS.dorms);
   };
 
+  const layers = [
+    { key: 'buses',     img: busIcon,      label: 'Buses' },
+    { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
+    { key: 'routes',    icon: '🛣️',        label: 'Routes', expandable: true },
+    { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
+    { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
+    { key: 'user',      icon: '📍',        label: 'My Location' },
+  ];
+
   return (
-    <div className="sub-header">
-      <div className="sub-header-content">
-        <h3>Map Display Options</h3>
-        
-        <div className="overlay-controls">
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.buses}
-              onChange={() => handleToggle('buses')}
-            />
-            <span>Buses</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.stops}
-              onChange={() => handleToggle('stops')}
-            />
-            <span>Bus Stops</span>
-          </label>
-          <div className="route-control-wrapper">
-            <label className="control-item">
-              <input
-                type="checkbox"
-                checked={overlaysVisible.routes}
-                onChange={() => handleToggle('routes')}
-              />
-              <span>Routes</span>
-            </label>
-            <button
-              type="button"
-              className="route-dropdown-toggle"
-              aria-label="Toggle route options"
-              onClick={() => setShowRouteDropdown((prev) => !prev)}
+    <div className="map-layer-panel">
+      <div className="map-layer-panel-header">
+        <span>Map Layers</span>
+        <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
+      </div>
+      <div className="map-layer-panel-body">
+        {layers.map(({ key, icon, img, label, expandable }) => (
+          <React.Fragment key={key}>
+            <div
+              className="layer-item"
+              onClick={() => {
+                handleToggle(key);
+                if (expandable && !overlays[key]) setRoutesExpanded(false);
+              }}
             >
-              {showRouteDropdown ? '▾' : '▸'}
-            </button>
-          </div>
-          {showRouteDropdown && (
-            <div className="route-dropdown-menu">
-              <label className="control-item route-option-item">
-                <input
-                  type="checkbox"
-                  checked={routeOptions.campus}
-                  onChange={() => handleRouteOptionToggle('campus')}
-                />
-                <span>Campus Loop</span>
-              </label>
-              <label className="control-item route-option-item">
-                <input
-                  type="checkbox"
-                  checked={routeOptions.downtown}
-                  onChange={() => handleRouteOptionToggle('downtown')}
-                />
-                <span>Downtown Loop</span>
-              </label>
-              <label className="control-item route-option-item">
-                <input
-                  type="checkbox"
-                  checked={routeOptions.walmart}
-                  onChange={() => handleRouteOptionToggle('walmart')}
-                />
-                <span>Walmart Trip</span>
-              </label>
+              <div className="layer-item-left">
+                {img
+                  ? <img src={img} alt={label} className="layer-item-icon-img" />
+                  : <span className="layer-item-icon">{icon}</span>
+                }
+                <span className="layer-item-label">{label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {expandable && overlays[key] && (
+                  <span
+                    style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
+                    onClick={(e) => { e.stopPropagation(); setRoutesExpanded(p => !p); }}
+                  >
+                    {routesExpanded ? '▾' : '▸'}
+                  </span>
+                )}
+                <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
+              </div>
             </div>
-          )}
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.user}
-              onChange={() => handleToggle('user')}
-            />
-            <span>My Location</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.academics}
-              onChange={() => handleToggle('academics')}
-            />
-            <span>Academics</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.dorms}
-              onChange={() => handleToggle('dorms')}
-            />
-            <span>Dorms</span>
-          </label>
-          <button type="button" className="reset-settings-button" onClick={handleResetDefaults}>
-            Reset Defaults
-          </button>
-        </div>
+
+            {expandable && routesExpanded && overlays[key] && (
+              <div className="route-suboptions">
+                {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
+                  <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                    <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
+                    <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
+                    <input
+                      type="checkbox"
+                      checked={routeOptions[routeKey]}
+                      onChange={() => handleRouteOptionToggle(routeKey)}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+
+        <div className="panel-divider" />
+        <button className="panel-reset-btn" onClick={handleReset}>
+          Reset Defaults
+        </button>
       </div>
     </div>
   );
