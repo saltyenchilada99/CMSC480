@@ -1,7 +1,32 @@
 import { Marker, Popup } from 'react-leaflet';
 // @ts-ignore
-import { GetBusIcon } from './busMarkers.tsx';
+import { GetBusStopIcon } from './busMarkers.tsx';
 
+
+type RouteInfo = {
+    name: string;
+    color: string;
+};
+
+const ROUTES: Record<string, RouteInfo> = {
+    campus:   { name: "Campus Loop",    color: "#B8860B" },
+    downtown: { name: "Downtown Loop",  color: "#6D0026" },
+    walmart:  { name: "Walmart Trip",   color: "#0057B8" },
+};
+
+const STOP_ROUTES: Record<string, RouteInfo[]> = {
+    'BS-1':  [ROUTES.campus, ROUTES.walmart],
+    'BS-2':  [ROUTES.campus],
+    'BS-3':  [ROUTES.campus],
+    'BS-4':  [ROUTES.campus],
+    'BS-5':  [ROUTES.campus],
+    'BS-6':  [ROUTES.campus],
+    'BS-7':  [ROUTES.downtown],
+    'BS-8': [ROUTES.walmart],
+    'BS-9': [ROUTES.downtown],
+    'BS-10': [ROUTES.downtown],
+    'BS-11': [ROUTES.downtown],
+};
 class busStop {
     name!: string;
     lat!: number;
@@ -85,8 +110,8 @@ const busStopLibrary: busStop[] = [{
     key: 'BS-8'
 }, {
     name: "McCormick Center",
-    lat: 41.00925,
-    long: 76.44673,
+    lat: 41.00880,
+    long: 76.44723,
     desc: 'The McCormick Center for the bus service is the gateway to Downtown Bloomsburg, ' +
         'providing a direct link to the shopping centers and living quarters.',
     location: 'Located at 400 E Second ST',
@@ -103,8 +128,8 @@ const busStopLibrary: busStop[] = [{
     key: 'BS-10'
 }, {
     name: "OSHA",
-    lat: 41.00461,
-    long: 76.45677,
+    lat: 41.00422,
+    long: 76.45687,
     desc: 'The Housing of Choice, the Old School House Apartment Complex provides students and teaching ' +
         'staff alike the best choice for housing, while being comfortably situated between the neighboring shops.',
     location: 'Located on 50 E 1st ST',
@@ -114,11 +139,11 @@ const busStopLibrary: busStop[] = [{
 
 export function BusStop() {
     return (
-        busStopLibrary.map((busStop : busStop, i : number) => (
+        busStopLibrary.map((busStop : busStop) => (
             <Marker
                 key={`${busStop.key}`}
                 position={[busStop.lat, -busStop.long]}
-                icon={GetBusIcon("busStopIcon")}
+                icon={GetBusStopIcon()}
                 zIndexOffset={500}
             >
                 <Popup>
@@ -128,6 +153,27 @@ export function BusStop() {
                     <div>{busStop.desc}</div>
                     <div style={{ marginBottom: "4px" }}>
                         <strong>{busStop.location}</strong>
+                    </div>
+                    <div style={{ marginTop: "8px", marginBottom: "4px" }}>
+                        <strong>Routes:</strong>
+                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                            {(STOP_ROUTES[busStop.key] ?? []).map((route) => (
+                                <span
+                                    key={route.name}
+                                    style={{
+                                        backgroundColor: route.color,
+                                        color: "#fff",
+                                        padding: "2px 8px",
+                                        borderRadius: "12px",
+                                        fontSize: "11px",
+                                        fontWeight: "bold",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {route.name}
+                                </span>
+                            ))}
+                        </div>
                     </div>
                     <img
                         src={busStop.img}

@@ -25,6 +25,7 @@ const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVA
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
 const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
+const STOPPED_HIDE_DELAY_MS = 1 * 60 * 1000;
 
 const CAMPUS_LOOP_PATH: LatLng[] = [
     { lat: 41.008689, lng: -76.445122 },
@@ -91,6 +92,49 @@ const fluidTracking = new FluidTrackingEngine(routes, {
 });
 
 const wsClients = new Set<WebSocket>();
+const stoppedSinceMsByVehicle = new Map<string, number>();
+
+function isStoppedStatus(status: unknown): boolean {
+    const normalizedStatus = String(status ?? '').trim().toLowerCase();
+    if (normalizedStatus.includes('idle')) {
+        return false;
+    }
+    return normalizedStatus.includes('stopped');
+}
+
+function getVisibleLocations(locations: VehicleLocation[]): VehicleLocation[] {
+    const nowMs = Date.now();
+    const activeVehicleIds = new Set<string>();
+
+    const visible = locations.filter(loc => {
+        const vehicleId = String(loc.VehicleNumber ?? '');
+        if (!vehicleId) {
+            return !isStoppedStatus(loc.Status);
+        }
+
+        activeVehicleIds.add(vehicleId);
+
+        if (!isStoppedStatus(loc.Status)) {
+            stoppedSinceMsByVehicle.delete(vehicleId);
+            return true;
+        }
+
+        const firstStoppedMs = stoppedSinceMsByVehicle.get(vehicleId) ?? nowMs;
+        if (!stoppedSinceMsByVehicle.has(vehicleId)) {
+            stoppedSinceMsByVehicle.set(vehicleId, firstStoppedMs);
+        }
+
+        return (nowMs - firstStoppedMs) < STOPPED_HIDE_DELAY_MS;
+    });
+
+    for (const vehicleId of stoppedSinceMsByVehicle.keys()) {
+        if (!activeVehicleIds.has(vehicleId)) {
+            stoppedSinceMsByVehicle.delete(vehicleId);
+        }
+    }
+
+    return visible;
+}
 
 function mapLocationForClient(loc: VehicleLocation) {
     return {
@@ -113,11 +157,12 @@ function mapLocationForClient(loc: VehicleLocation) {
 }
 
 function broadcastLocations(locations: VehicleLocation[]): void {
+    const visibleLocations = getVisibleLocations(locations);
     const message = JSON.stringify({
         type: 'location_update',
         timestamp: new Date().toISOString(),
         delayedByMs: FLUID_DELAY_MS,
-        buses: locations.map(mapLocationForClient)
+        buses: visibleLocations.map(mapLocationForClient)
     });
 
     wsClients.forEach(client => {
@@ -157,13 +202,14 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.get('/api/buses', (_req: Request, res: Response) => {
+    const visibleLocations = getVisibleLocations(latestDisplayLocations);
     res.json({
         success: true,
         timestamp: new Date().toISOString(),
         delayedByMs: FLUID_DELAY_MS,
-        count: latestDisplayLocations.length,
+        count: visibleLocations.length,
         rawCount: latestRawLocations.length,
-        buses: latestDisplayLocations.map(mapLocationForClient)
+        buses: visibleLocations.map(mapLocationForClient)
     });
 });
 
@@ -194,11 +240,12 @@ wss.on('connection', (ws: WebSocket) => {
     wsClients.add(ws);
 
     if (latestDisplayLocations.length > 0) {
+        const visibleLocations = getVisibleLocations(latestDisplayLocations);
         ws.send(JSON.stringify({
             type: 'location_update',
             timestamp: new Date().toISOString(),
             delayedByMs: FLUID_DELAY_MS,
-            buses: latestDisplayLocations.map(mapLocationForClient)
+            buses: visibleLocations.map(mapLocationForClient)
         }));
     }
 

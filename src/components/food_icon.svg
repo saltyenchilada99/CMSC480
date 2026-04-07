@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="108" height="81">
+  <defs>
+    <radialGradient id="maroonSheen" cx="42%" cy="28%" r="58%">
+      <stop offset="0%"   stop-color="#b03048" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#3a0810" stop-opacity="0.0"/>
+    </radialGradient>
+    <clipPath id="circleClip">
+      <circle cx="768" cy="390" r="185"/>
+    </clipPath>
+    <filter id="pinShadow" x="-15%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Outer maroon shell -->
+  <path filter="url(#pinShadow)"
+        d="M768,820 C768,820 430,620 430,390 A338,338 0 1,1 1106,390 C1106,620 768,820 768,820 Z"
+        fill="#7a1522"/>
+
+  <!-- 3-D sheen -->
+  <path d="M768,820 C768,820 430,620 430,390 A338,338 0 1,1 1106,390 C1106,620 768,820 768,820 Z"
+        fill="url(#maroonSheen)"/>
+
+  <!-- Outer gold ring -->
+  <path d="M768,775 C768,775 462,585 462,390 A306,306 0 1,1 1074,390 C1074,585 768,775 768,775 Z"
+        fill="#DAA520"/>
+
+  <!-- Inner maroon ring -->
+  <path d="M768,728 C768,728 494,550 494,390 A274,274 0 1,1 1042,390 C1042,550 768,728 768,728 Z"
+        fill="#7a1522"/>
+
+  <!-- Inner gold ring -->
+  <path d="M768,695 C768,695 516,524 516,390 A252,252 0 1,1 1020,390 C1020,524 768,695 768,695 Z"
+        fill="#DAA520"/>
+
+  <!-- Black centre circle -->
+  <circle cx="768" cy="390" r="215" fill="#111111"/>
+
+  <!-- Fork & knife, white, centred in black circle -->
+  <g clip-path="url(#circleClip)" fill="#FFFFFF">
+    <!-- Fork tines -->
+    <rect x="638" y="255" width="28" height="110" rx="14"/>
+    <rect x="682" y="255" width="28" height="110" rx="14"/>
+    <rect x="726" y="255" width="28" height="110" rx="14"/>
+    <!-- Fork shoulder -->
+    <path d="M638,355 Q650,415 683,422 Q716,415 730,355 Z"/>
+    <!-- Fork handle -->
+    <rect x="668" y="422" width="38" height="165" rx="19"/>
+
+    <!-- Knife blade -->
+    <path d="M818,255 C858,255 898,278 898,360 L898,422 L818,422 Z"/>
+    <!-- Knife handle -->
+    <rect x="818" y="422" width="80" height="165" rx="19"/>
+  </g>
+
+  <!-- Inner rim -->
+  <circle cx="768" cy="390" r="215" fill="none" stroke="#000000" stroke-width="16" opacity="0.3"/>
+</svg>

@@ -195,7 +195,8 @@ export async function getVehicles(): Promise<Vehicle[]> {
  * GET /rad/v1/vehicles/{vehicleNumber}/location
  */
 export async function getVehicleLocation(
-    vehicleNumber: string
+    vehicleNumber: string,
+    vehicleName?: string
 ): Promise<VehicleLocation> {
     const url = `${CONFIG.baseUrl}/rad/v1/vehicles/${encodeURIComponent(vehicleNumber)}/location`;
 
@@ -226,7 +227,7 @@ export async function getVehicleLocation(
         // Normalize the API response to our VehicleLocation format
         return {
             VehicleNumber: vehicleNumber,
-            VehicleName: vehicleNumber, // API doesn't return name, use number
+            VehicleName: vehicleName || vehicleNumber,
             Latitude: apiLocation.Latitude,
             Longitude: apiLocation.Longitude,
             Heading: apiLocation.Direction,
@@ -260,13 +261,17 @@ function normalizeStatus(displayState: string): VehicleStatus {
  * Fetch the current location for every vehicle in the provided list in parallel.
  * Falls back gracefully – a single vehicle failure won't crash the whole poll.
  *
- * @param vehicleNumbers  Array of vehicle numbers (e.g. ["BUS01", "BUS02"])
+ * @param vehicles  Array of vehicle numbers or Vehicle objects (e.g. ["BUS01", "BUS02"])
  */
 export async function getAllVehicleLocations(
-    vehicleNumbers: string[]
+    vehicles: string[] | Vehicle[]
 ): Promise<VehicleLocation[]> {
     const settled = await Promise.allSettled(
-        vehicleNumbers.map((num) => getVehicleLocation(num))
+        vehicles.map((v) =>
+            typeof v === "string"
+                ? getVehicleLocation(v)
+                : getVehicleLocation(v.VehicleNumber, v.VehicleName)
+        )
     );
 
     const locations: VehicleLocation[] = [];
@@ -303,15 +308,15 @@ export async function startPolling(
         return;
     }
 
-    // Resolve vehicle list if not provided
+    // Resolve vehicle list if not provided, keeping names
+    let vehicles: Vehicle[] | string[] = vehicleNumbers;
     if (vehicleNumbers.length === 0) {
-        const all = await getVehicles();
-        vehicleNumbers = all.map((v) => v.VehicleNumber);
+        vehicles = await getVehicles();
     }
 
     const poll = async () => {
         try {
-            const locations = await getAllVehicleLocations(vehicleNumbers);
+            const locations = await getAllVehicleLocations(vehicles);
             onUpdate(locations);
         } catch (err) {
             console.error("[BusTracker] Poll error:", err);
