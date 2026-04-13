@@ -1,17 +1,29 @@
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
+import { useEffect, useState, useCallback } from "react";
+import { Marker, CircleMarker, Popup, useMap } from "react-leaflet";
+import { GetUserIcon } from './components/busMarkers.tsx';
+import './components/UserTracker.css';
 
-// Fixes the Leaflet marker icons, they wouldn't show otherwise
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-    iconUrl: require("leaflet/dist/images/marker-icon.png"),
-    shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-});
+function RecenterOnce({ position, onCentered }) {
+    const map = useMap();
+
+    useEffect(() => {
+        map.flyTo(position, map.getZoom(), {
+            animate: true,
+            duration: 0.5
+        });
+        onCentered();
+    }, [map, position, onCentered]);
+
+    return null;
+}
 
 export function UserLocationMap() {
-    const [userPos, setUserPos] = useState<[number, number] | null>null;
+    const [userPos, setUserPos] = useState(null);
+    const [hasCentered, setHasCentered] = useState(false);
+
+    const handleCentered = useCallback(() => {
+        setHasCentered(true);
+    }, []);
 
     useEffect(() => {
         if (!navigator.geolocation) return;
@@ -27,21 +39,35 @@ export function UserLocationMap() {
         return () => navigator.geolocation.clearWatch(watchId);
     }, []);
 
+    if (!userPos) return null;
+
     return (
-        <MapContainer
-            center={userPos || [40.997, -76.454]} // Default to Bloomsburg if no position yet
-            zoom={15}
-            style={{ height: "100vh", width: "100%" }}
-        >
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        <>
+            {!hasCentered && (
+                <RecenterOnce position={userPos} onCentered={handleCentered} />
+            )}
+
+            <CircleMarker
+                center={userPos}
+                radius={14}
+                className="user-location-halo"
+                pathOptions={{
+                    color: "rgba(255, 215, 0, 0.4)",   // BU gold, soft
+                    fillColor: "rgba(255, 215, 0, 0.4)",
+                    fillOpacity: 0.3
+                }}
             />
 
-            {userPos && (
-                <Marker position={userPos}>
-                    <Popup>You are here</Popup>
-                </Marker>
-            )}
-        </MapContainer>
+            <Marker
+                position={userPos}
+                icon={GetUserIcon("userIcon")}
+            >
+                <Popup>
+                    <div style={{ marginBottom: "4px" }}>
+                        <strong>{"You are Here."}</strong>
+                    </div>
+                </Popup>
+            </Marker>
+        </>
     );
 }

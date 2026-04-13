@@ -4,6 +4,7 @@ import busStop from './bus_stop_icon.png';
 import academic from './academic_icon.png';
 import dorm from './dorm_icon.png';
 import food from './food_icon.svg';
+import userTracker from './user_tracker_icon.png';
 
 const MARKER_WIDTH = 108;
 const MARKER_HEIGHT = 81;
@@ -57,5 +58,13 @@ export function GetFoodIcon() {
         iconSize: [hitW, hitH + TOP_HIT_EXTRA],
         iconAnchor: [Math.round(hitW / 2), anchorY + TOP_HIT_EXTRA],
         popupAnchor: [0, popupOffsetY],
+    });
+}
+
+export function GetUserIcon(icon:string) {
+    return L.icon({
+        iconUrl: userTracker,
+        iconSize: [128, 95],
+        iconAnchor: [64, 85],
     });
 }

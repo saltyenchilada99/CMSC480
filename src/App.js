@@ -14,6 +14,7 @@ import { Footer } from './components/Footer.js';
 import { Academic } from './components/Academic.tsx';
 import { Dorm } from './components/dorm.tsx';
 import { Food } from './components/food.tsx';
+import { UserLocationMap } from "./UserTracker";
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -37,6 +38,10 @@ function App() {
   const { buses, connectionStatus } = useContext(BusContext);
   const [showAcademics, setShowAcademics] = useState(false);
   const [showDorms, setShowDorms] = useState(false);
+  const bloomsburgBounds = [
+    [40.9850, -76.5050], // Southwest corner of Bloomsburg
+    [41.0300, -76.4300]  // Northeast corner of Bloomsburg
+  ];
   const [showFood, setShowFood] = useState(false);
   const [foodVisibility, setFoodVisibility] = useState({
     'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
@@ -58,21 +63,26 @@ function App() {
           onFoodToggle={setShowFood}
           onFoodOptionsToggle={setFoodVisibility}
         />
-        <MapContainer center={[41.012, -76.448]} zoom={15.25}>
+        <MapContainer
+            center={[41.012, -76.448]}
+            zoom={15.25}
+            minZoom={14}
+            maxZoom={18}
+            maxBounds={bloomsburgBounds}
+            maxBoundsViscosity={1.0}
+        >
           <TileLayer
             attribution='&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
             ext="jpg"
           />
-          {userPos && showUserLocation && (
-            <Marker position={userPos}>
-              <Popup>You are here</Popup>
-            </Marker>
-          )}
+          {showUserLocation && <UserLocationMap />}
+
           {showBuses && <Bus />}
           {showAcademics && <Academic />}
           {showDorms && <Dorm />}
           {showFood && <Food foodVisibility={foodVisibility} />}
+
           <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
           <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
           <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />

@@ -38,7 +38,7 @@ html, body, #root {
 /* Floating layer panel inside the map */
 .map-layer-panel {
   position: absolute;
-  top: 16px;
+  top: 135px;
   right: 16px;
   z-index: 1100;
   width: 230px;

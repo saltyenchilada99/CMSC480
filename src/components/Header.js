@@ -4,6 +4,8 @@ import '../styles/Header.css';
 
 export function Header({ connectionStatus, buses }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showBusList, setShowBusList] = useState(false);
+  const activeBuses = buses.filter(bus => bus.status !== "Stopped");
 
   // add/remove class on body for modal open state
   React.useEffect(() => {
@@ -32,9 +34,27 @@ export function Header({ connectionStatus, buses }) {
           </button>
         </nav>
 
-        <div className={`status-badge ${connectionStatus === 'Live' ? 'live' : 'offline'}`}>
+        {/* Live Connection of Buses */}
+        <div className={`status-badge ${connectionStatus === 'Live' ? 'live' : 'offline'}`}
+             onMouseEnter={() => setShowBusList(true)}
+             onMouseLeave={() => setShowBusList(false)}
+        >
           <span className="status-dot"></span>
           {connectionStatus} {buses.length > 0 ? `· ${buses.length} bus${buses.length !== 1 ? 'es' : ''}` : ''}
+
+          {showBusList && (
+              <div className="bus-list-dropdown">
+                {activeBuses.length === 0 ? (
+                    <div className="bus-list-item">No active buses</div>
+                ) : (
+                    activeBuses.map((bus, index) => (
+                        <div key={index} className="bus-list-item">
+                          {bus.id || index + 1}
+                        </div>
+                    ))
+                )}
+              </div>
+          )}
         </div>
       </div>
       </header>
@@ -57,7 +77,7 @@ export function Header({ connectionStatus, buses }) {
 
               <div className="schedule-section">
                 <h3>Downtown Loop</h3>
-                <p><strong>Route:</strong> McCormick / Fountain / Old School House Apartments / Maroon and Gold Apartments / Warhurst Apartments / Glenn Avenue Apartments</p>
+                <p><strong>Route:</strong> McCormick / Fountain / Old School House Apartments / Glenn Avenue Apartments</p>
                 <p><strong>Monday – Thursday:</strong> 7:30 a.m. – midnight. Departs McCormick at 7:30 a.m. and on the half hour and hour. Last bus departs at midnight (NO SERVICE AT 10:00 a.m.)</p>
                 <p><strong>Friday – Scheduled Service:</strong> 7:30 a.m. – 4:30 p.m. Departs McCormick at 7:30 a.m. and on the half hour and hour. Last bus departs at 4:30 p.m. (NO SERVICE AT 10:00 a.m.)</p>
                 <p><strong>Saturday &amp; Sunday:</strong> NO SERVICE</p>

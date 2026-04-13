@@ -112,6 +112,36 @@
   50% { opacity: 0.5; transform: scale(0.85); }
 }
 
+/* These four items are for the dropdown on the Live Tab*/
+.status-badge {
+  position: relative;
+  cursor: default;
+}
+
+.bus-list-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 6px 0;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 135px;
+  z-index: 1000;
+}
+
+.bus-list-item {
+  color: #555;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.bus-list-item:hover {
+  background: #f0f0f0;
+}
+
 /* Modal Overlay */
 .modal-overlay {
   position: fixed;

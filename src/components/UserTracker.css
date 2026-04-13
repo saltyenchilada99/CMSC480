@@ -1,0 +1,15 @@
+.user-location-halo {
+    animation: userPulse 2s infinite ease-out;
+}
+
+/*noinspection ALL*/
+@keyframes userPulse {
+    0% {
+        r: 6;
+        opacity: 0.8;
+    }
+    100% {
+        r: 18;
+        opacity: 0;
+    }
+}
