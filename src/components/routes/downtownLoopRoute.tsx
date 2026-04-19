@@ -4,13 +4,11 @@ import { Polyline } from "react-leaflet";
 type LatLng = [number, number];
 
 const stops: LatLng[] = [
-    [41.00880, -76.44723], // McCormick Center
+    [41.00925, -76.44673], // McCormick Center
     [41.00268, -76.45811], // Fountain
-    [41.00422, -76.45687], // Old School House Apartments (OSHA)
-    //[41.00401, -76.45426], // Maroon & Gold Apartments (M&GA)
-    [41.00370, -76.45697], // Warhurst Apartments (WHA)
-    [41.00752, -76.45689], // Glenn Avenue Apartments (GAA)
-    [41.00880, -76.44723], // Back to McCormick Center (Closes Loop)
+    [41.00452, -76.45687], // Old School House Apartments (OSHA)
+    [41.00688, -76.45747], // Glenn Avenue Apartments (GAA)
+    [41.00925, -76.44673], // Back to McCormick Center (Closes Loop)
 ];
 
 export function DowntownLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boolean }) {

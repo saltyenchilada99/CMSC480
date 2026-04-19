@@ -1,99 +1,238 @@
 import React, { useState } from 'react';
 import '../styles/SubHeader.css';
+import busIcon from './bus_icon.png';
+import busStopIcon from './bus_stop_icon.png';
+import academicIcon from './academic_icon.png';
+import dormIcon from './dorm_icon.png';
+import foodIcon from './food_icon.svg';
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onUserToggle, onAcademicsToggle, onDormsToggle}) {
-  const [overlaysVisible, setOverlaysVisible] = useState({
-    buses: true,
-    stops: true,
-    routes: true,
-    user: true,
-    academics: false,
-    dorms: false
-  });
+const DEFAULT_OVERLAYS = {
+  buses: true,
+  stops: true,
+  routes: true,
+  user: true,
+  academics: false,
+  dorms: false,
+  food: false,
+};
 
-  const handleToggle = (overlay) => {
-    const newSettings = {
-      ...overlaysVisible,
-      [overlay]: !overlaysVisible[overlay],
-    };
-    setOverlaysVisible(newSettings);
+const DEFAULT_ROUTE_OPTIONS = {
+  campus: true,
+  downtown: true,
+  walmart: true,
+};
 
-    // Notify parent component when a toggle changes
-    if (overlay === 'buses' && onBusesToggle) {
-      onBusesToggle(newSettings.buses);
+const ROUTE_COLORS = {
+  campus: '#B8860B',
+  downtown: '#6D0026',
+  walmart: '#0057B8',
+};
+
+const ROUTE_LABELS = {
+  campus: 'Campus Loop',
+  downtown: 'Downtown Loop',
+  walmart: 'Walmart Trip',
+};
+
+export const DEFAULT_FOOD_OPTIONS = {
+  'F-1': true, // Scranton Commons
+  'F-2': true, // Kehr Union
+  'F-3': true, // Soltz Hall
+  'F-4': true, // Andruss Library
+  'F-5': true, // Monty's
+  'F-6': true, // Warren SSC
+};
+
+const FOOD_LABELS = {
+  'F-1': 'Scranton Commons',
+  'F-2': 'Kehr Union Building',
+  'F-3': 'Soltz Hall Dining',
+  'F-4': 'Andruss Library',
+  'F-5': "Monty's",
+  'F-6': 'Warren SSC',
+};
+
+const FOOD_DOT_COLOR = '#c0392b';
+
+function Toggle({ checked, onChange }) {
+  return (
+    <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
+      <input type="checkbox" checked={checked} onChange={onChange} />
+      <span className="toggle-track" />
+    </label>
+  );
+}
+
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
+  const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
+  const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
+  const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
+  const [routesExpanded, setRoutesExpanded] = useState(false);
+  const [foodExpanded, setFoodExpanded] = useState(false);
+
+  const syncMainRouteToggle = (nextOptions) => {
+    const anyEnabled = Object.values(nextOptions).some(Boolean);
+    setOverlays((prev) => {
+      if (prev.routes === anyEnabled) return prev;
+      if (onRoutesToggle) onRoutesToggle(anyEnabled);
+      return { ...prev, routes: anyEnabled };
+    });
+  };
+
+  const syncMainFoodToggle = (nextOptions) => {
+    const anyEnabled = Object.values(nextOptions).some(Boolean);
+    setOverlays((prev) => {
+      if (prev.food === anyEnabled) return prev;
+      if (onFoodToggle) onFoodToggle(anyEnabled);
+      return { ...prev, food: anyEnabled };
+    });
+  };
+
+  const handleToggle = (key) => {
+    const next = { ...overlays, [key]: !overlays[key] };
+    setOverlays(next);
+
+    if (key === 'buses' && onBusesToggle) onBusesToggle(next.buses);
+    if (key === 'stops' && onStopsToggle) onStopsToggle(next.stops);
+    if (key === 'user' && onUserToggle) onUserToggle(next.user);
+    if (key === 'academics' && onAcademicsToggle) onAcademicsToggle(next.academics);
+    if (key === 'dorms' && onDormsToggle) onDormsToggle(next.dorms);
+    if (key === 'routes') {
+      if (onRoutesToggle) onRoutesToggle(next.routes);
+      const nextRouteOptions = { campus: next.routes, downtown: next.routes, walmart: next.routes };
+      setRouteOptions(nextRouteOptions);
+      if (onRouteOptionsToggle) onRouteOptionsToggle(nextRouteOptions);
+      if (!next.routes) setRoutesExpanded(false);
     }
-    if (overlay === 'stops' && onStopsToggle) {
-      onStopsToggle(newSettings.stops);
-    }
-    if (overlay === 'routes' && onRoutesToggle) {
-      onRoutesToggle(newSettings.routes);
-    }
-    if (overlay === 'user' && onUserToggle) {
-      onUserToggle(newSettings.user);
-    }
-    if (overlay === 'academics' && onAcademicsToggle) {
-      onAcademicsToggle(newSettings.academics);
-    }
-    if (overlay === 'dorms' && onDormsToggle) {
-      onDormsToggle(newSettings.dorms);
+    if (key === 'food') {
+      if (onFoodToggle) onFoodToggle(next.food);
+      const nextFoodOptions = Object.fromEntries(Object.keys(DEFAULT_FOOD_OPTIONS).map(k => [k, next.food]));
+      setFoodOptions(nextFoodOptions);
+      if (onFoodOptionsToggle) onFoodOptionsToggle(nextFoodOptions);
+      if (!next.food) setFoodExpanded(false);
     }
   };
 
+  const handleRouteOptionToggle = (routeKey) => {
+    const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
+    setRouteOptions(next);
+    if (onRouteOptionsToggle) onRouteOptionsToggle(next);
+    syncMainRouteToggle(next);
+  };
+
+  const handleFoodOptionToggle = (foodKey) => {
+    const next = { ...foodOptions, [foodKey]: !foodOptions[foodKey] };
+    setFoodOptions(next);
+    if (onFoodOptionsToggle) onFoodOptionsToggle(next);
+    syncMainFoodToggle(next);
+  };
+
+  const handleReset = () => {
+    setOverlays(DEFAULT_OVERLAYS);
+    setRouteOptions(DEFAULT_ROUTE_OPTIONS);
+    setFoodOptions(DEFAULT_FOOD_OPTIONS);
+    setRoutesExpanded(false);
+    setFoodExpanded(false);
+    if (onBusesToggle) onBusesToggle(DEFAULT_OVERLAYS.buses);
+    if (onStopsToggle) onStopsToggle(DEFAULT_OVERLAYS.stops);
+    if (onRoutesToggle) onRoutesToggle(DEFAULT_OVERLAYS.routes);
+    if (onRouteOptionsToggle) onRouteOptionsToggle(DEFAULT_ROUTE_OPTIONS);
+    if (onUserToggle) onUserToggle(DEFAULT_OVERLAYS.user);
+    if (onAcademicsToggle) onAcademicsToggle(DEFAULT_OVERLAYS.academics);
+    if (onDormsToggle) onDormsToggle(DEFAULT_OVERLAYS.dorms);
+    if (onFoodToggle) onFoodToggle(DEFAULT_OVERLAYS.food);
+    if (onFoodOptionsToggle) onFoodOptionsToggle(DEFAULT_FOOD_OPTIONS);
+  };
+
+  const layers = [
+    { key: 'buses',     img: busIcon,      label: 'Buses' },
+    { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
+    { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
+    { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
+    { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
+    { key: 'food',      img: foodIcon,     label: 'Dining' },
+    { key: 'user',      icon: '📍',        label: 'My Location' },
+  ];
+
   return (
-    <div className="sub-header">
-      <div className="sub-header-content">
-        <h3>Map Display Options</h3>
-        
-        <div className="overlay-controls">
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.buses}
-              onChange={() => handleToggle('buses')}
-            />
-            <span>Buses</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.stops}
-              onChange={() => handleToggle('stops')}
-            />
-            <span>Bus Stops</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.routes}
-              onChange={() => handleToggle('routes')}
-            />
-            <span>Routes</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.user}
-              onChange={() => handleToggle('user')}
-            />
-            <span>My Location</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.academics}
-              onChange={() => handleToggle('academics')}
-            />
-            <span>Academics</span>
-          </label>
-          <label className="control-item">
-            <input
-              type="checkbox"
-              checked={overlaysVisible.dorms}
-              onChange={() => handleToggle('dorms')}
-            />
-            <span>Dorms</span>
-          </label>
-        </div>
+    <div className="map-layer-panel">
+      <div className="map-layer-panel-header">
+        <span>Map Layers</span>
+        <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
+      </div>
+      <div className="map-layer-panel-body">
+        {layers.map(({ key, icon, img, label, expandable }) => {
+          const isExpanded = expandable === 'routes' ? routesExpanded : expandable === 'food' ? foodExpanded : false;
+          const setExpanded = expandable === 'routes' ? setRoutesExpanded : setFoodExpanded;
+
+          return (
+            <React.Fragment key={key}>
+              <div
+                className="layer-item"
+                onClick={() => {
+                  handleToggle(key);
+                  if (expandable && !overlays[key]) setExpanded(false);
+                }}
+              >
+                <div className="layer-item-left">
+                  {img
+                    ? <img src={img} alt={label} className="layer-item-icon-img" />
+                    : <span className="layer-item-icon">{icon}</span>
+                  }
+                  <span className="layer-item-label">{label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {expandable && overlays[key] && (
+                    <span
+                      style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
+                      onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }}
+                    >
+                      {isExpanded ? '▾' : '▸'}
+                    </span>
+                  )}
+                  <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
+                </div>
+              </div>
+
+              {expandable === 'routes' && isExpanded && overlays[key] && (
+                <div className="route-suboptions">
+                  {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
+                    <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                      <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
+                      <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
+                      <input
+                        type="checkbox"
+                        checked={routeOptions[routeKey]}
+                        onChange={() => handleRouteOptionToggle(routeKey)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {expandable === 'food' && isExpanded && overlays[key] && (
+                <div className="route-suboptions">
+                  {Object.keys(DEFAULT_FOOD_OPTIONS).map((foodKey) => (
+                    <label key={foodKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                      <span className="route-dot" style={{ background: FOOD_DOT_COLOR }} />
+                      <span className="route-suboption-label">{FOOD_LABELS[foodKey]}</span>
+                      <input
+                        type="checkbox"
+                        checked={foodOptions[foodKey]}
+                        onChange={() => handleFoodOptionToggle(foodKey)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+
+        <div className="panel-divider" />
+        <button className="panel-reset-btn" onClick={handleReset}>
+          Reset Defaults
+        </button>
       </div>
     </div>
   );

@@ -13,6 +13,8 @@ import { SubHeader } from './components/SubHeader.js';
 import { Footer } from './components/Footer.js';
 import { Academic } from './components/Academic.tsx';
 import { Dorm } from './components/dorm.tsx';
+import { Food } from './components/food.tsx';
+import { UserLocationMap } from "./UserTracker";
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -22,64 +24,74 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const WS_URL = 'ws://localhost:3001';
-
 function App() {
   const [showBuses, setShowBuses] = useState(true);
   const [showStops, setShowStops] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
+  const [routeVisibility, setRouteVisibility] = useState({
+    campus: true,
+    downtown: true,
+    walmart: true,
+  });
   const [showUserLocation, setShowUserLocation] = useState(true);
-  const [userPos, setUserPos] = useState(null);
+  const [userPos] = useState(null);
   const { buses, connectionStatus } = useContext(BusContext);
   const [showAcademics, setShowAcademics] = useState(false);
   const [showDorms, setShowDorms] = useState(false);
+  const bloomsburgBounds = [
+    [40.9850, -76.5050], // Southwest corner of Bloomsburg
+    [41.0300, -76.4300]  // Northeast corner of Bloomsburg
+  ];
+  const [showFood, setShowFood] = useState(false);
+  const [foodVisibility, setFoodVisibility] = useState({
+    'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
+  });
 
-  /**
-   * Toggle states for map layers. These control whether the corresponding components are rendered on the map.
-   * - toggleBus: Show/hide bus markers
-   * - toggleStops: Show/hide bus stop markers
-   * - toggleRoutes: Show/hide bus routes
-   * - toggleUser: Show/hide user's current location marker
-   * Each toggle is implemented as a checkbox in the UI, allowing users to customize their map view.
-   * The state variables are passed down as props to the respective components to conditionally render them.
-   * This approach keeps the map interactive and allows users to focus on the information they find most relevant.
-   */
   return (
-      <div className="app-container">
-        <Header connectionStatus={connectionStatus} buses={buses} />
+    <div className="app-container">
+      <Header connectionStatus={connectionStatus} buses={buses} />
+      <div id="body">
+        {/* Floating layer panel overlaid on the map */}
         <SubHeader
           onBusesToggle={setShowBuses}
           onStopsToggle={setShowStops}
           onRoutesToggle={setShowRoutes}
+          onRouteOptionsToggle={setRouteVisibility}
           onUserToggle={setShowUserLocation}
           onAcademicsToggle={setShowAcademics}
           onDormsToggle={setShowDorms}
+          onFoodToggle={setShowFood}
+          onFoodOptionsToggle={setFoodVisibility}
         />
-        <div id='body'>
-          <MapContainer center={[41.012, -76.448]} zoom={15.25}>
-            <TileLayer
-                attribution='&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
-                ext="jpg"
-            />
-            {userPos && showUserLocation && (
-                <Marker position={userPos}>
-                  <Popup>You are here</Popup>
-                </Marker>
-            )}
-            {showBuses && <Bus />}
-            {showAcademics && <Academic />}
-            {showDorms && <Dorm />}
-            <CampusLoopRoute toggleRoutes={showRoutes} />
-            <DowntownLoopRoute toggleRoutes={showRoutes} />
-            <WalmartTripRoute toggleRoutes={showRoutes} />
-            {showStops && <BusStop />}
-          </MapContainer>
-        </div>
-        <Footer />
+        <MapContainer
+            center={[41.012, -76.448]}
+            zoom={15.25}
+            minZoom={14}
+            maxZoom={18}
+            maxBounds={bloomsburgBounds}
+            maxBoundsViscosity={1.0}
+        >
+          <TileLayer
+            attribution='&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
+            ext="jpg"
+          />
+          {showUserLocation && <UserLocationMap />}
+
+          {showBuses && <Bus />}
+          {showAcademics && <Academic />}
+          {showDorms && <Dorm />}
+          {showFood && <Food foodVisibility={foodVisibility} />}
+
+          <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
+          <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
+          <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
+          {showStops && <BusStop />}
+        </MapContainer>
       </div>
+      <Footer />
+    </div>
   );
 }
-
 
 export default App;
