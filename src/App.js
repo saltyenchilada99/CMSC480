@@ -12,6 +12,7 @@ import { Header } from './components/Header.js';
 import { SubHeader } from './components/SubHeader.js';
 import { Footer } from './components/Footer.js';
 import { Academic } from './components/Academic.tsx';
+import { Recreation } from './components/Recreation.tsx';
 import { Dorm } from './components/dorm.tsx';
 import { Food } from './components/food.tsx';
 import { UserLocationMap } from "./UserTracker";
@@ -57,6 +58,7 @@ function App() {
   const [userPosition, setUserPosition] = useState(null);
   const { buses, connectionStatus } = useContext(BusContext);
   const [showAcademics, setShowAcademics] = useState(false);
+  const [showRecreation, setShowRecreation] = useState(false);
   const [showDorms, setShowDorms] = useState(false);
   const [focusTarget, setFocusTarget] = useState({
     type: 'campus',
@@ -146,6 +148,7 @@ function App() {
           onCenterMap={handleResetFocus}
           onUserToggle={handleUserToggle}
           onAcademicsToggle={setShowAcademics}
+          onRecreationToggle={setShowRecreation}
           onDormsToggle={setShowDorms}
           onFoodToggle={setShowFood}
           onFoodOptionsToggle={setFoodVisibility}
@@ -171,6 +174,7 @@ function App() {
 
           {showBuses && <Bus onMarkerFocus={handleMarkerFocus} />}
           {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} />}
+          {showRecreation && <Recreation onMarkerFocus={handleMarkerFocus} />}
           {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} />}
           {showFood && <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} />}
 

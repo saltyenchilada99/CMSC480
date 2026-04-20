@@ -4,6 +4,7 @@ import busStop from './bus_stop_icon.png';
 import academic from './academic_icon.png';
 import dorm from './dorm_icon.png';
 import food from './food_icon.svg';
+import recreation from './recreation_icon.svg';
 import userTracker from './user_tracker_icon.png';
 
 const MARKER_WIDTH = 108;
@@ -36,6 +37,7 @@ const DORM_CROP: MarkerCrop = withHitPadding({ left: 30, top: 5, width: 50, heig
 const BUS_STOP_CROP: MarkerCrop = withHitPadding({ left: 31, top: 4, width: 46, height: 70 });
 const BUS_CROP: MarkerCrop = withHitPadding({ left: 26, top: 5, width: 58, height: 67 });
 const FOOD_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54, height: 60 });
+const RECREATION_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54, height: 60 });
 
 function buildIcon(
     iconUrl: string,
@@ -59,6 +61,7 @@ const BUS_STOP_ICON = buildIcon(busStop, BUS_STOP_CROP);
 const ACADEMIC_ICON = buildIcon(academic, ACADEMIC_CROP);
 const DORM_ICON = buildIcon(dorm, DORM_CROP);
 const FOOD_ICON = buildIcon(food, FOOD_CROP, DEFAULT_ANCHOR_Y);
+const RECREATION_ICON = buildIcon(recreation, RECREATION_CROP, DEFAULT_ANCHOR_Y);
 const USER_ICON = L.icon({
     iconUrl: userTracker,
     iconSize: [128, 95],
@@ -83,6 +86,10 @@ export function GetDormIcon() {
 
 export function GetFoodIcon() {
     return FOOD_ICON;
+}
+
+export function GetRecreationIcon() {
+    return RECREATION_ICON;
 }
 
 export function GetUserIcon(icon:string) {

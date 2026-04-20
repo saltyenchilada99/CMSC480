@@ -1,5 +1,5 @@
 type MarkerPopupCardProps = {
-    theme: 'academic' | 'housing';
+    theme: 'academic' | 'housing' | 'recreation';
     label: string;
     title: string;
     description: string;

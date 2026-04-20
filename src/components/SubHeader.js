@@ -5,6 +5,7 @@ import busStopIcon from './bus_stop_icon.png';
 import academicIcon from './academic_icon.png';
 import dormIcon from './dorm_icon.png';
 import foodIcon from './food_icon.svg';
+import recreationIcon from './recreation_icon.svg';
 
 const DEFAULT_OVERLAYS = {
   buses: true,
@@ -12,6 +13,7 @@ const DEFAULT_OVERLAYS = {
   routes: true,
   user: true,
   academics: false,
+  recreation: false,
   dorms: false,
   food: false,
 };
@@ -85,7 +87,7 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onAcademicsToggle, onRecreationToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
@@ -118,6 +120,7 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     if (key === 'stops' && onStopsToggle) onStopsToggle(next.stops);
     if (key === 'user' && onUserToggle) onUserToggle(next.user);
     if (key === 'academics' && onAcademicsToggle) onAcademicsToggle(next.academics);
+    if (key === 'recreation' && onRecreationToggle) onRecreationToggle(next.recreation);
     if (key === 'dorms' && onDormsToggle) onDormsToggle(next.dorms);
     if (key === 'routes') {
       if (onRoutesToggle) onRoutesToggle(next.routes);
@@ -161,6 +164,7 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     if (onRouteOptionsToggle) onRouteOptionsToggle(DEFAULT_ROUTE_OPTIONS);
     if (onUserToggle) onUserToggle(DEFAULT_OVERLAYS.user);
     if (onAcademicsToggle) onAcademicsToggle(DEFAULT_OVERLAYS.academics);
+    if (onRecreationToggle) onRecreationToggle(DEFAULT_OVERLAYS.recreation);
     if (onDormsToggle) onDormsToggle(DEFAULT_OVERLAYS.dorms);
     if (onFoodToggle) onFoodToggle(DEFAULT_OVERLAYS.food);
     if (onFoodOptionsToggle) onFoodOptionsToggle(DEFAULT_FOOD_OPTIONS);
@@ -171,6 +175,7 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
     { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
+    { key: 'recreation', img: recreationIcon, label: 'Recreation + Athletics' },
     { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
     { key: 'food',      img: foodIcon,     label: 'Dining' },
     { key: 'user',      label: 'My Location' },

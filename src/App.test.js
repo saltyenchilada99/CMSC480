@@ -50,6 +50,10 @@ jest.mock('./components/Academic.tsx', () => ({
   Academic: () => null,
 }));
 
+jest.mock('./components/Recreation.tsx', () => ({
+  Recreation: () => null,
+}));
+
 jest.mock('./components/dorm.tsx', () => ({
   Dorm: () => null,
 }));

@@ -425,6 +425,11 @@ html, body, #root {
   background: linear-gradient(160deg, #fffaf6 0%, #fff7ef 55%, #f5ede7 100%);
 }
 
+.campus-popup--recreation .leaflet-popup-content-wrapper,
+.campus-popup--recreation .leaflet-popup-tip {
+  background: linear-gradient(160deg, #f4fbff 0%, #eef7fb 55%, #e5eef0 100%);
+}
+
 .campus-popup--housing .leaflet-popup-content-wrapper,
 .campus-popup--housing .leaflet-popup-tip {
   background: linear-gradient(160deg, #fbfcf7 0%, #f5fbf4 55%, #edf4ef 100%);
@@ -465,6 +470,17 @@ html, body, #root {
   --popup-label-text: #6e1020;
   --popup-link: #7a1022;
   --popup-link-hover: #540915;
+}
+
+.marker-popup-card--recreation {
+  --popup-accent: #0f5f73;
+  --popup-accent-soft: #d19b3b;
+  --popup-chip-bg: rgba(15, 95, 115, 0.1);
+  --popup-chip-text: #12495a;
+  --popup-label-bg: rgba(15, 95, 115, 0.13);
+  --popup-label-text: #12495a;
+  --popup-link: #0d5568;
+  --popup-link-hover: #083c49;
 }
 
 .marker-popup-card--housing {

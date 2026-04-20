@@ -30,6 +30,20 @@ const academicBuildings: AcademicBuilding[] = [{
     ],
     link: 'https://www.commonwealthu.edu/offices-directory/undergraduate-admissions-bloomsburg',
 }, {
+    name: "Harvey A. Andruss Library",
+    lat: 41.00910,
+    long: 76.44532,
+    key: 'A-11',
+    label: 'Library + Study Space',
+    description: 'Andruss Library is Bloomsburg\'s main research and study library, combining quiet individual work areas with collaborative rooms, technology access, archives, and public-facing research support.',
+    chips: ['900+ study spaces', 'Archives'],
+    highlights: [
+        'The library provides more than 900 study spaces and more than 200 computers across four floors.',
+        'Nearly 30 group study rooms support collaborative work for small and mid-sized groups.',
+        'University Archives and Special Collections are housed in Andruss alongside print, digital, and database access for research.',
+    ],
+    link: 'https://library.commonwealthu.edu/locations/andrusslibrary',
+}, {
     name: "Centennial Hall",
     lat: 41.00800,
     long: 76.44606,
