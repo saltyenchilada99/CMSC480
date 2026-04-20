@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 // @ts-ignore
 import { GetBusStopIcon } from './busMarkers.tsx';
@@ -137,51 +138,51 @@ const busStopLibrary: busStop[] = [{
     key: 'BS-11'
 }];
 
-export function BusStop() {
+export const BusStop = memo(function BusStop({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
     return (
-        busStopLibrary.map((busStop : busStop) => (
-            <Marker
-                key={`${busStop.key}`}
-                position={[busStop.lat, -busStop.long]}
-                icon={GetBusStopIcon()}
-                zIndexOffset={500}
-            >
-                <Popup>
-                    <div style={{ marginBottom: "4px" }}>
-                        <strong>{busStop.name}</strong>
-                    </div>
-                    <div>{busStop.desc}</div>
-                    <div style={{ marginBottom: "4px" }}>
-                        <strong>{busStop.location}</strong>
-                    </div>
-                    <div style={{ marginTop: "8px", marginBottom: "4px" }}>
-                        <strong>Routes:</strong>
-                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-                            {(STOP_ROUTES[busStop.key] ?? []).map((route) => (
-                                <span
-                                    key={route.name}
-                                    style={{
-                                        backgroundColor: route.color,
-                                        color: "#fff",
-                                        padding: "2px 8px",
-                                        borderRadius: "12px",
-                                        fontSize: "11px",
-                                        fontWeight: "bold",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    {route.name}
-                                </span>
-                            ))}
+        busStopLibrary.map((busStopItem : busStop) => {
+            const position: [number, number] = [busStopItem.lat, -busStopItem.long];
+
+            return (
+                <Marker
+                    key={`${busStopItem.key}`}
+                    position={position}
+                    icon={GetBusStopIcon()}
+                    bubblingMouseEvents={false}
+                    zIndexOffset={500}
+                    eventHandlers={{
+                        click: () => onMarkerFocus?.(position, 'marker'),
+                    }}
+                >
+                    <Popup className="campus-popup campus-popup--transit" minWidth={252} maxWidth={312} autoPan={false}>
+                        <div className="info-popup-card info-popup-card--transit">
+                            <span className="info-popup-card__eyebrow">Transit stop</span>
+                            <h3 className="info-popup-card__title">{busStopItem.name}</h3>
+                            <p className="info-popup-card__text">{busStopItem.desc}</p>
+                            <p className="info-popup-card__supporting">{busStopItem.location}</p>
+                            <div className="info-popup-card__section-label">Routes</div>
+                            <div className="info-popup-card__chips">
+                                {(STOP_ROUTES[busStopItem.key] ?? []).map((route) => (
+                                    <span
+                                        key={route.name}
+                                        className="info-popup-card__chip"
+                                        style={{ backgroundColor: route.color, color: '#fff' }}
+                                    >
+                                        {route.name}
+                                    </span>
+                                ))}
+                            </div>
+                            <img
+                                src={busStopItem.img}
+                                alt={busStopItem.name}
+                                className="info-popup-card__image"
+                                decoding="async"
+                                loading="lazy"
+                            />
                         </div>
-                    </div>
-                    <img
-                        src={busStop.img}
-                        alt={busStop.name}
-                        style={{ width: "240px", borderRadius: "10px", marginTop: "10px" }}
-                    />
-                </Popup>
-            </Marker>
-        ))
+                    </Popup>
+                </Marker>
+            );
+        })
     );
-}
+});

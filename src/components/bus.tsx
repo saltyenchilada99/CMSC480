@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState} from 'react';
+import { createContext, memo, useContext, useEffect, useRef, useState} from 'react';
 // Giving problems when including React in the list above for some reason
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
@@ -62,7 +62,7 @@ export function BusProvider({ children } : {children : React.ReactNode} ) {
   );
 }
 
-export function Bus() {
+export const Bus = memo(function Bus({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
   // No given type but output is not affected
   const { buses } = useContext(BusContext);
 
@@ -72,18 +72,39 @@ export function Bus() {
             key={bus.id}
             position={[bus.lat, bus.lng]}
             icon={GetBusIcon("busIcon")}
+            bubblingMouseEvents={false}
             zIndexOffset={1000}
+            eventHandlers={{
+              click: () => onMarkerFocus?.([bus.lat, bus.lng], 'marker'),
+            }}
           >
-            <Popup>
-              <strong>{bus.name || bus.id}</strong><br />
-              Status: {bus.status}<br />
-              Speed: {bus.speed} mph<br />
-              Heading: {bus.heading}°<br />
-              {bus.address && <>Address: {bus.address}<br /></>}
-              {bus.driver && <>Driver: {bus.driver}<br /></>}
-              Updated: {bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}
+            <Popup className="campus-popup campus-popup--transit" minWidth={236} maxWidth={292} autoPan={false}>
+              <div className="info-popup-card info-popup-card--transit">
+                <span className="info-popup-card__eyebrow">Live bus</span>
+                <h3 className="info-popup-card__title">{bus.name || bus.id}</h3>
+                <div className="info-popup-card__data-grid">
+                  <div className="info-popup-card__data-item">
+                    <span className="info-popup-card__data-label">Status</span>
+                    <span className="info-popup-card__data-value">{bus.status || 'Unknown'}</span>
+                  </div>
+                  <div className="info-popup-card__data-item">
+                    <span className="info-popup-card__data-label">Speed</span>
+                    <span className="info-popup-card__data-value">{bus.speed ?? 'N/A'} mph</span>
+                  </div>
+                  <div className="info-popup-card__data-item">
+                    <span className="info-popup-card__data-label">Heading</span>
+                    <span className="info-popup-card__data-value">{bus.heading ?? 'N/A'}°</span>
+                  </div>
+                  <div className="info-popup-card__data-item">
+                    <span className="info-popup-card__data-label">Updated</span>
+                    <span className="info-popup-card__data-value">{bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}</span>
+                  </div>
+                </div>
+                {bus.address && <p className="info-popup-card__supporting">Address: {bus.address}</p>}
+                {bus.driver && <p className="info-popup-card__supporting">Driver: {bus.driver}</p>}
+              </div>
             </Popup>
           </Marker>
         ))
   );
-}
+});
