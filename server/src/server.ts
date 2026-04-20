@@ -28,7 +28,8 @@ const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVA
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
 const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
-const STOPPED_HIDE_DELAY_MS = 1 * 60 * 1000;
+const FLUID_DELAY_MS = INTERPOLATION_WINDOW_MS + ADAPTIVE_DELAY_BUFFER_MS;
+const STOPPED_HIDE_DELAY_MS = 60 * 1000;
 
 const CAMPUS_LOOP_PATH: LatLng[] = [
     { lat: 41.008689, lng: -76.445122 },
@@ -246,6 +247,13 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('close', () => wsClients.delete(ws));
     ws.on('error', () => wsClients.delete(ws));
 });
+
+async function buildRoutes(): Promise<BusRoute[]> {
+    // In the future, this might fetch from a database or GeoJSON file.
+    return [
+        new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, ROUTE_RELEASE_DISTANCE_METERS, true)
+    ];
+}
 
 async function startServer() {
     try {
