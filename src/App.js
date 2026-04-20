@@ -24,9 +24,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const CAMPUS_CENTER = [41.012, -76.448];
-const CAMPUS_ZOOM = 15.25;
 const USER_ZOOM = 16;
+const CAMPUS_CENTER = [41.012, -76.448];
+const CAMPUS_ZOOM = USER_ZOOM;
 
 function buildBaseFocus(userPosition, showUserLocation) {
   if (showUserLocation && userPosition) {
@@ -64,7 +64,7 @@ function App() {
     zoom: CAMPUS_ZOOM,
   });
   const hasAutoCenteredOnUser = useRef(false);
-  const previousShowUserLocation = useRef(showUserLocation);
+  const centerOnUserWhenAvailable = useRef(false);
   const bloomsburgBounds = [
     [40.9850, -76.5050],
     [41.0300, -76.4300]
@@ -97,25 +97,30 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!showUserLocation && focusTarget.type === 'user') {
-      setFocusTarget(buildBaseFocus(userPosition, false));
-    }
-  }, [focusTarget.type, showUserLocation, userPosition]);
-
-  useEffect(() => {
-    if (showUserLocation && userPosition && !hasAutoCenteredOnUser.current) {
+    if (showUserLocation && userPosition && (!hasAutoCenteredOnUser.current || centerOnUserWhenAvailable.current)) {
       hasAutoCenteredOnUser.current = true;
+      centerOnUserWhenAvailable.current = false;
       setFocusTarget(buildBaseFocus(userPosition, true));
     }
   }, [showUserLocation, userPosition]);
 
-  useEffect(() => {
-    if (showUserLocation && !previousShowUserLocation.current && userPosition) {
-      setFocusTarget(buildBaseFocus(userPosition, true));
+  const handleUserToggle = useCallback((nextShowUserLocation) => {
+    setShowUserLocation(nextShowUserLocation);
+
+    if (!nextShowUserLocation) {
+      centerOnUserWhenAvailable.current = false;
+      return;
     }
 
-    previousShowUserLocation.current = showUserLocation;
-  }, [showUserLocation, userPosition]);
+    if (userPosition) {
+      hasAutoCenteredOnUser.current = true;
+      centerOnUserWhenAvailable.current = false;
+      setFocusTarget(buildBaseFocus(userPosition, true));
+      return;
+    }
+
+    centerOnUserWhenAvailable.current = true;
+  }, [userPosition]);
 
   const handleResetFocus = useCallback(() => {
     setFocusTarget(buildBaseFocus(userPosition, showUserLocation));
@@ -138,7 +143,8 @@ function App() {
           onStopsToggle={setShowStops}
           onRoutesToggle={setShowRoutes}
           onRouteOptionsToggle={setRouteVisibility}
-          onUserToggle={setShowUserLocation}
+          onCenterMap={handleResetFocus}
+          onUserToggle={handleUserToggle}
           onAcademicsToggle={setShowAcademics}
           onDormsToggle={setShowDorms}
           onFoodToggle={setShowFood}

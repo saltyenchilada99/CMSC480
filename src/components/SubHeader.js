@@ -54,6 +54,28 @@ const FOOD_LABELS = {
 
 const FOOD_DOT_COLOR = '#c0392b';
 
+function LocationButtonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 21s-5.5-4-5.5-9.5a5.5 5.5 0 1 1 11 0C17.5 17 12 21 12 21Z" />
+      <circle cx="12" cy="11.5" r="1.8" />
+    </svg>
+  );
+}
+
+function CenterMapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M12 2.75v3.25" />
+      <path d="M12 18v3.25" />
+      <path d="M2.75 12h3.25" />
+      <path d="M18 12h3.25" />
+      <circle cx="12" cy="12" r="8" opacity="0.55" />
+    </svg>
+  );
+}
+
 function Toggle({ checked, onChange }) {
   return (
     <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
@@ -63,7 +85,7 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
@@ -151,7 +173,7 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
     { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
     { key: 'food',      img: foodIcon,     label: 'Dining' },
-    { key: 'user',      icon: '📍',        label: 'My Location' },
+    { key: 'user',      label: 'My Location' },
   ];
 
   return (
@@ -164,6 +186,35 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
         {layers.map(({ key, icon, img, label, expandable }) => {
           const isExpanded = expandable === 'routes' ? routesExpanded : expandable === 'food' ? foodExpanded : false;
           const setExpanded = expandable === 'routes' ? setRoutesExpanded : setFoodExpanded;
+          const isUserLayer = key === 'user';
+
+          if (isUserLayer) {
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`location-toggle-card ${overlays.user ? 'location-toggle-card--active' : ''}`}
+                aria-pressed={overlays.user}
+                aria-label={`${overlays.user ? 'Disable' : 'Enable'} my location`}
+                onClick={() => handleToggle('user')}
+              >
+                <span className="location-toggle-card__content">
+                  <span className="location-toggle-card__icon-shell">
+                    <LocationButtonIcon />
+                  </span>
+                  <span className="location-toggle-card__copy">
+                    <span className="location-toggle-card__title">{label}</span>
+                    <span className="location-toggle-card__subtitle">
+                      {overlays.user ? 'Showing your live position' : 'Hidden from the map'}
+                    </span>
+                  </span>
+                </span>
+                <span className="location-toggle-card__badge">
+                  {overlays.user ? 'On' : 'Off'}
+                </span>
+              </button>
+            );
+          }
 
           return (
             <React.Fragment key={key}>
@@ -230,6 +281,16 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
         })}
 
         <div className="panel-divider" />
+        <button
+          type="button"
+          className="panel-secondary-btn"
+          onClick={onCenterMap}
+        >
+          <span className="panel-secondary-btn-icon">
+            <CenterMapIcon />
+          </span>
+          <span>Center Map</span>
+        </button>
         <button className="panel-reset-btn" onClick={handleReset}>
           Reset Defaults
         </button>

@@ -168,6 +168,113 @@ html, body, #root {
   transform: translateX(15px);
 }
 
+.location-toggle-card {
+  width: 100%;
+  border: 1px solid rgba(89, 96, 104, 0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(145deg, rgba(252, 252, 252, 0.96), rgba(245, 247, 249, 0.94));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.location-toggle-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(110, 16, 32, 0.2);
+  box-shadow: 0 8px 20px rgba(43, 37, 40, 0.08);
+}
+
+.location-toggle-card:focus-visible,
+.panel-secondary-btn:focus-visible,
+.panel-reset-btn:focus-visible {
+  outline: 2px solid rgba(110, 16, 32, 0.35);
+  outline-offset: 2px;
+}
+
+.location-toggle-card--active {
+  border-color: rgba(110, 16, 32, 0.34);
+  background: linear-gradient(145deg, rgba(255, 249, 250, 0.98), rgba(248, 236, 239, 0.95));
+  box-shadow: 0 10px 24px rgba(110, 16, 32, 0.1);
+}
+
+.location-toggle-card__content,
+.panel-secondary-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.location-toggle-card__content {
+  gap: 10px;
+  min-width: 0;
+}
+
+.location-toggle-card__icon-shell {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #7f8790;
+  background: rgba(103, 110, 117, 0.1);
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.location-toggle-card__icon-shell svg,
+.panel-secondary-btn-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.location-toggle-card--active .location-toggle-card__icon-shell {
+  color: #6e1020;
+  background: rgba(110, 16, 32, 0.14);
+  transform: scale(1.04);
+}
+
+.location-toggle-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.location-toggle-card__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1d1719;
+}
+
+.location-toggle-card__subtitle {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #6e747c;
+}
+
+.location-toggle-card__badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(92, 100, 108, 0.08);
+  color: #6e747c;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.location-toggle-card--active .location-toggle-card__badge {
+  background: #6e1020;
+  color: #fff;
+}
+
 /* Route sub-options */
 .route-suboptions {
   padding: 0 8px 4px 16px;
@@ -217,6 +324,30 @@ html, body, #root {
   height: 1px;
   background: rgba(110, 16, 32, 0.08);
   margin: 2px 8px;
+}
+
+.panel-secondary-btn {
+  margin: 4px 8px 2px;
+  width: calc(100% - 16px);
+  padding: 8px 10px;
+  border: 1px solid rgba(110, 16, 32, 0.18);
+  border-radius: 8px;
+  background: rgba(110, 16, 32, 0.05);
+  color: #6e1020;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.panel-secondary-btn:hover {
+  background: rgba(110, 16, 32, 0.09);
+  border-color: rgba(110, 16, 32, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Reset button inside panel */

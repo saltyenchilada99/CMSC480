@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import L from 'leaflet';
 import { useMap, useMapEvents } from 'react-leaflet';
 
 type MapFocusTarget = {
@@ -12,7 +13,7 @@ type MapViewportControllerProps = {
     onResetFocus: () => void;
 };
 
-const POSITION_EPSILON = 0.00001;
+const POSITION_EPSILON_PIXELS = 1;
 
 export function MapViewportController({ focusTarget, onResetFocus }: MapViewportControllerProps) {
     const map = useMap();
@@ -62,13 +63,47 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
     }, []);
 
     useEffect(() => {
+        const getBoundedCenter = (center: [number, number], zoom: number) => {
+            const maxBounds = map.options.maxBounds;
+            const desiredCenter = L.latLng(center);
+
+            if (!maxBounds) {
+                return desiredCenter;
+            }
+
+            const size = map.getSize();
+            const southWestPoint = map.project(maxBounds.getSouthWest(), zoom);
+            const northEastPoint = map.project(maxBounds.getNorthEast(), zoom);
+            const minX = Math.min(southWestPoint.x, northEastPoint.x);
+            const maxX = Math.max(southWestPoint.x, northEastPoint.x);
+            const minY = Math.min(southWestPoint.y, northEastPoint.y);
+            const maxY = Math.max(southWestPoint.y, northEastPoint.y);
+            const halfWidth = size.x / 2;
+            const halfHeight = size.y / 2;
+            const desiredPoint = map.project(desiredCenter, zoom);
+            const allowedMinX = minX + halfWidth;
+            const allowedMaxX = maxX - halfWidth;
+            const allowedMinY = minY + halfHeight;
+            const allowedMaxY = maxY - halfHeight;
+
+            const clampedX =
+                allowedMinX > allowedMaxX
+                    ? (minX + maxX) / 2
+                    : Math.min(Math.max(desiredPoint.x, allowedMinX), allowedMaxX);
+            const clampedY =
+                allowedMinY > allowedMaxY
+                    ? (minY + maxY) / 2
+                    : Math.min(Math.max(desiredPoint.y, allowedMinY), allowedMaxY);
+
+            return map.unproject(L.point(clampedX, clampedY), zoom);
+        };
+
         const currentCenter = map.getCenter();
         const currentZoom = map.getZoom();
         const nextZoom = focusTarget.zoom ?? currentZoom;
-        const [nextLat, nextLng] = focusTarget.center;
+        const boundedCenter = getBoundedCenter(focusTarget.center, nextZoom);
         const moved =
-            Math.abs(currentCenter.lat - nextLat) > POSITION_EPSILON ||
-            Math.abs(currentCenter.lng - nextLng) > POSITION_EPSILON;
+            map.project(currentCenter, nextZoom).distanceTo(map.project(boundedCenter, nextZoom)) > POSITION_EPSILON_PIXELS;
         const zoomChanged = Math.abs(currentZoom - nextZoom) > 0.001;
 
         if (!moved && !zoomChanged) {
@@ -80,7 +115,7 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
         }
 
         if (zoomChanged) {
-            map.flyTo(focusTarget.center, nextZoom, {
+            map.flyTo(boundedCenter, nextZoom, {
                 animate: true,
                 duration: 0.55,
                 easeLinearity: 0.2,
@@ -88,7 +123,7 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
             return;
         }
 
-        map.panTo(focusTarget.center, {
+        map.panTo(boundedCenter, {
             animate: true,
             duration: 0.35,
             easeLinearity: 0.2,
