@@ -1,6 +1,6 @@
 import './App.css';
 import { useContext, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
 import {Bus, BusContext} from './components/bus.tsx';
@@ -15,6 +15,7 @@ import { Academic } from './components/Academic.tsx';
 import { Dorm } from './components/dorm.tsx';
 import { Food } from './components/food.tsx';
 import { UserLocationMap } from "./UserTracker";
+import { DEFAULT_BUS_STATUS_OPTIONS } from './components/SubHeader';
 
 // Fix Leaflet default marker icons broken by webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -34,7 +35,6 @@ function App() {
     walmart: true,
   });
   const [showUserLocation, setShowUserLocation] = useState(true);
-  const [userPos] = useState(null);
   const { buses, connectionStatus } = useContext(BusContext);
   const [showAcademics, setShowAcademics] = useState(false);
   const [showDorms, setShowDorms] = useState(false);
@@ -43,8 +43,39 @@ function App() {
     [41.0300, -76.4300]  // Northeast corner of Bloomsburg
   ];
   const [showFood, setShowFood] = useState(false);
+  const [busStatusVisibility, setBusStatusVisibility] = useState(DEFAULT_BUS_STATUS_OPTIONS);
+  const [trackingMode, setTrackingMode] = useState('fluid');
   const [foodVisibility, setFoodVisibility] = useState({
     'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
+  });
+
+  const getStatusCategory = (status) => {
+    const normalized = String(status ?? '').trim().toLowerCase();
+    if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
+    if (normalized === 'idle' || normalized === 'idling') return 'idle';
+    if (normalized === 'stopped' || normalized === 'stop') return 'stopped';
+    if (normalized === 'nodata' || normalized === 'no data') return 'stopped';
+    return 'stopped';
+  };
+
+  const filteredBuses = buses.filter((bus) => {
+    const category = getStatusCategory(bus.status);
+    return !!busStatusVisibility[category];
+  });
+
+  const displayBuses = filteredBuses.map((bus) => {
+    const lat = trackingMode === 'ping'
+      ? (bus.pingLat ?? bus.lat)
+      : (bus.fluidLat ?? bus.lat);
+    const lng = trackingMode === 'ping'
+      ? (bus.pingLng ?? bus.lng)
+      : (bus.fluidLng ?? bus.lng);
+
+    return {
+      ...bus,
+      lat,
+      lng,
+    };
   });
 
   return (
@@ -62,6 +93,8 @@ function App() {
           onDormsToggle={setShowDorms}
           onFoodToggle={setShowFood}
           onFoodOptionsToggle={setFoodVisibility}
+          onBusStatusOptionsToggle={setBusStatusVisibility}
+          onTrackingModeChange={setTrackingMode}
         />
         <MapContainer
             center={[41.012, -76.448]}
@@ -78,7 +111,7 @@ function App() {
           />
           {showUserLocation && <UserLocationMap />}
 
-          {showBuses && <Bus />}
+          {showBuses && <Bus buses={displayBuses} />}
           {showAcademics && <Academic />}
           {showDorms && <Dorm />}
           {showFood && <Food foodVisibility={foodVisibility} />}

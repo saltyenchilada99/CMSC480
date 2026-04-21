@@ -28,24 +28,12 @@ function buildIcon(iconUrl: string) {
     });
 }
 
-export function GetBusIcon(icon: string) {
-    const imgURL = icon === "busIcon" ? busIcon : busStop;
-    return buildIcon(imgURL);
-}
+const BUS_ICON = buildIcon(busIcon);
+const BUS_STOP_ICON = buildIcon(busStop);
+const ACADEMIC_ICON = buildIcon(academic);
+const DORM_ICON = buildIcon(dorm);
 
-export function GetBusStopIcon() {
-    return buildIcon(busStop);
-}
-
-export function GetAcademicIcon() {
-    return buildIcon(academic);
-}
-
-export function GetDormIcon() {
-    return buildIcon(dorm);
-}
-
-export function GetFoodIcon() {
+const FOOD_ICON = (() => {
     const hitW = Math.round(MARKER_WIDTH * 0.52);
     const hitH = Math.max(34, Math.round(MARKER_HEIGHT * 0.82));
     const imgOffset = Math.round((MARKER_WIDTH - hitW) / 2);
@@ -59,12 +47,34 @@ export function GetFoodIcon() {
         iconAnchor: [Math.round(hitW / 2), anchorY + TOP_HIT_EXTRA],
         popupAnchor: [0, popupOffsetY],
     });
+})();
+
+const USER_ICON = L.icon({
+    iconUrl: userTracker,
+    iconSize: [128, 95],
+    iconAnchor: [64, 85],
+});
+
+export function GetBusIcon(icon: string) {
+    return icon === 'busIcon' ? BUS_ICON : BUS_STOP_ICON;
+}
+
+export function GetBusStopIcon() {
+    return BUS_STOP_ICON;
+}
+
+export function GetAcademicIcon() {
+    return ACADEMIC_ICON;
+}
+
+export function GetDormIcon() {
+    return DORM_ICON;
+}
+
+export function GetFoodIcon() {
+    return FOOD_ICON;
 }
 
 export function GetUserIcon(icon:string) {
-    return L.icon({
-        iconUrl: userTracker,
-        iconSize: [128, 95],
-        iconAnchor: [64, 85],
-    });
+    return USER_ICON;
 }

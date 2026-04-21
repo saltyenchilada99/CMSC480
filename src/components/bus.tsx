@@ -62,9 +62,10 @@ export function BusProvider({ children } : {children : React.ReactNode} ) {
   );
 }
 
-export function Bus() {
+export function Bus({ buses: busesProp }: { buses?: Array<{ id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }> }) {
   // No given type but output is not affected
-  const { buses } = useContext(BusContext);
+  const { buses: busesFromContext } = useContext(BusContext);
+  const buses = busesProp ?? busesFromContext;
 
   return (
         buses.map((bus: { id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }) => (

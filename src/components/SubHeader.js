@@ -16,6 +16,24 @@ const DEFAULT_OVERLAYS = {
   food: false,
 };
 
+export const DEFAULT_BUS_STATUS_OPTIONS = {
+  active: true,
+  idle: true,
+  stopped: true,
+};
+
+const BUS_STATUS_LABELS = {
+  active: 'Active (Moving)',
+  idle: 'Idle',
+  stopped: 'Stopped',
+};
+
+const BUS_STATUS_COLORS = {
+  active: '#2e7d32',
+  idle: '#f9a825',
+  stopped: '#c62828',
+};
+
 const DEFAULT_ROUTE_OPTIONS = {
   campus: true,
   downtown: true,
@@ -63,10 +81,13 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle }) {
+export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onUserToggle, onAcademicsToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle, onBusStatusOptionsToggle, onTrackingModeChange }) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
+  const [busStatusOptions, setBusStatusOptions] = useState(DEFAULT_BUS_STATUS_OPTIONS);
+  const [trackingMode, setTrackingMode] = useState('fluid');
+  const [busesExpanded, setBusesExpanded] = useState(false);
   const [routesExpanded, setRoutesExpanded] = useState(false);
   const [foodExpanded, setFoodExpanded] = useState(false);
 
@@ -88,11 +109,28 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     });
   };
 
+  const syncMainBusesToggle = (nextOptions) => {
+    const anyEnabled = Object.values(nextOptions).some(Boolean);
+    setOverlays((prev) => {
+      if (prev.buses === anyEnabled) return prev;
+      if (onBusesToggle) onBusesToggle(anyEnabled);
+      return { ...prev, buses: anyEnabled };
+    });
+  };
+
   const handleToggle = (key) => {
     const next = { ...overlays, [key]: !overlays[key] };
     setOverlays(next);
 
     if (key === 'buses' && onBusesToggle) onBusesToggle(next.buses);
+    if (key === 'buses') {
+      const nextBusStatusOptions = Object.fromEntries(
+        Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map(k => [k, next.buses])
+      );
+      setBusStatusOptions(nextBusStatusOptions);
+      if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(nextBusStatusOptions);
+      if (!next.buses) setBusesExpanded(false);
+    }
     if (key === 'stops' && onStopsToggle) onStopsToggle(next.stops);
     if (key === 'user' && onUserToggle) onUserToggle(next.user);
     if (key === 'academics' && onAcademicsToggle) onAcademicsToggle(next.academics);
@@ -127,10 +165,20 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     syncMainFoodToggle(next);
   };
 
+  const handleBusStatusOptionToggle = (statusKey) => {
+    const next = { ...busStatusOptions, [statusKey]: !busStatusOptions[statusKey] };
+    setBusStatusOptions(next);
+    if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(next);
+    syncMainBusesToggle(next);
+  };
+
   const handleReset = () => {
     setOverlays(DEFAULT_OVERLAYS);
     setRouteOptions(DEFAULT_ROUTE_OPTIONS);
     setFoodOptions(DEFAULT_FOOD_OPTIONS);
+    setBusStatusOptions(DEFAULT_BUS_STATUS_OPTIONS);
+    setTrackingMode('fluid');
+    setBusesExpanded(false);
     setRoutesExpanded(false);
     setFoodExpanded(false);
     if (onBusesToggle) onBusesToggle(DEFAULT_OVERLAYS.buses);
@@ -142,10 +190,17 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     if (onDormsToggle) onDormsToggle(DEFAULT_OVERLAYS.dorms);
     if (onFoodToggle) onFoodToggle(DEFAULT_OVERLAYS.food);
     if (onFoodOptionsToggle) onFoodOptionsToggle(DEFAULT_FOOD_OPTIONS);
+    if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(DEFAULT_BUS_STATUS_OPTIONS);
+    if (onTrackingModeChange) onTrackingModeChange('fluid');
+  };
+
+  const handleTrackingModeChange = (mode) => {
+    setTrackingMode(mode);
+    if (onTrackingModeChange) onTrackingModeChange(mode);
   };
 
   const layers = [
-    { key: 'buses',     img: busIcon,      label: 'Buses' },
+    { key: 'buses',     img: busIcon,      label: 'Buses', expandable: 'buses' },
     { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
     { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
@@ -162,8 +217,18 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
       </div>
       <div className="map-layer-panel-body">
         {layers.map(({ key, icon, img, label, expandable }) => {
-          const isExpanded = expandable === 'routes' ? routesExpanded : expandable === 'food' ? foodExpanded : false;
-          const setExpanded = expandable === 'routes' ? setRoutesExpanded : setFoodExpanded;
+          const isExpanded = expandable === 'buses'
+            ? busesExpanded
+            : expandable === 'routes'
+              ? routesExpanded
+              : expandable === 'food'
+                ? foodExpanded
+                : false;
+          const setExpanded = expandable === 'buses'
+            ? setBusesExpanded
+            : expandable === 'routes'
+              ? setRoutesExpanded
+              : setFoodExpanded;
 
           return (
             <React.Fragment key={key}>
@@ -207,6 +272,53 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
                       />
                     </label>
                   ))}
+                </div>
+              )}
+
+              {expandable === 'buses' && isExpanded && overlays[key] && (
+                <div className="route-suboptions">
+                  {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
+                    <label key={statusKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                      <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
+                      <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
+                      <input
+                        type="checkbox"
+                        checked={busStatusOptions[statusKey]}
+                        onChange={() => handleBusStatusOptionToggle(statusKey)}
+                      />
+                    </label>
+                  ))}
+
+                  <div className="tracking-mode-group">
+                    <span className="tracking-mode-label">Tracking Mode</span>
+                    <div className="tracking-mode-buttons">
+                      <button
+                        type="button"
+                        className={`tracking-mode-btn ${trackingMode === 'fluid' ? 'active' : ''}`}
+                        aria-pressed={trackingMode === 'fluid'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTrackingModeChange('fluid');
+                        }}
+                      >
+                        Fluid
+                      </button>
+                      <button
+                        type="button"
+                        className={`tracking-mode-btn ${trackingMode === 'ping' ? 'active' : ''}`}
+                        aria-pressed={trackingMode === 'ping'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTrackingModeChange('ping');
+                        }}
+                      >
+                        Ping
+                      </button>
+                    </div>
+                    <div className="tracking-mode-current" role="status" aria-live="polite">
+                      Current: <strong>{trackingMode === 'fluid' ? 'Fluid' : 'Ping'}</strong>
+                    </div>
+                  </div>
                 </div>
               )}
 
