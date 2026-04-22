@@ -19,13 +19,17 @@ import { FluidTrackingEngine } from './FluidTracking';
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const USE_POLLING = process.env.USE_POLLING !== 'false';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? '30000', 10);
-const DEFAULT_FLUID_DELAY_MS = USE_POLLING ? POLL_INTERVAL_MS + 2_000 : 15_000;
-const FLUID_DELAY_MS = parseInt(process.env.FLUID_DELAY_MS ?? `${DEFAULT_FLUID_DELAY_MS}`, 10);
+const DEFAULT_INTERPOLATION_WINDOW_MS = USE_POLLING ? POLL_INTERVAL_MS : 30_000;
+const INTERPOLATION_WINDOW_MS = parseInt(
+    process.env.FLUID_INTERPOLATION_WINDOW_MS ?? process.env.FLUID_DELAY_MS ?? `${DEFAULT_INTERPOLATION_WINDOW_MS}`,
+    10
+);
 const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVAL_MS ?? '250', 10);
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
 const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
-const STOPPED_HIDE_DELAY_MS = 1 * 60 * 1000;
+const FLUID_DELAY_MS = INTERPOLATION_WINDOW_MS + ADAPTIVE_DELAY_BUFFER_MS;
+const STOPPED_HIDE_DELAY_MS = 60 * 1000;
 
 const CAMPUS_LOOP_PATH: LatLng[] = [
     { lat: 41.008689, lng: -76.445122 },
@@ -79,17 +83,8 @@ const CAMPUS_LOOP_PATH: LatLng[] = [
 let latestRawLocations: VehicleLocation[] = [];
 let latestDisplayLocations: VehicleLocation[] = [];
 let broadcastTimer: ReturnType<typeof setInterval> | null = null;
-
-const routes: BusRoute[] = [
-    new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, 175)
-];
-
-const fluidTracking = new FluidTrackingEngine(routes, {
-    delayMs: FLUID_DELAY_MS,
-    routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
-    routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
-    adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS
-});
+let routes: BusRoute[] = [];
+let fluidTracking: FluidTrackingEngine | null = null;
 
 const wsClients = new Set<WebSocket>();
 const stoppedSinceMsByVehicle = new Map<string, number>();
@@ -174,6 +169,7 @@ function broadcastLocations(locations: VehicleLocation[]): void {
 
 function updateLocations(locations: VehicleLocation[]): void {
     latestRawLocations = locations;
+    if (!fluidTracking) return;
     fluidTracking.ingestLocations(locations);
     latestDisplayLocations = fluidTracking.getDisplayLocations();
     broadcastLocations(latestDisplayLocations);
@@ -220,11 +216,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
         mode: USE_POLLING ? 'polling' : 'webhook',
         busCount: latestDisplayLocations.length,
         rawBusCount: latestRawLocations.length,
-        smoothingDelayMs: FLUID_DELAY_MS,
+        smoothingDelayMs: INTERPOLATION_WINDOW_MS,
         smoothingBroadcastMs: FLUID_BROADCAST_INTERVAL_MS,
         routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
         routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
-        adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS,
         pollIntervalMs: POLL_INTERVAL_MS,
         routeCount: routes.length,
         wsClients: wsClients.size,
@@ -253,6 +248,13 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('error', () => wsClients.delete(ws));
 });
 
+async function buildRoutes(): Promise<BusRoute[]> {
+    // In the future, this might fetch from a database or GeoJSON file.
+    return [
+        new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, ROUTE_RELEASE_DISTANCE_METERS, true)
+    ];
+}
+
 async function startServer() {
     try {
         console.log('=== Bloomsburg Campus Bus Tracker Server ===\n');
@@ -277,8 +279,16 @@ async function startServer() {
         console.log(`[Server] Running on http://localhost:${PORT}`);
         console.log(`[Server] REST API: http://localhost:${PORT}/api/buses`);
         console.log(`[Server] WebSocket: ws://localhost:${PORT}`);
-        console.log(`[Smoothing] Delay: ${FLUID_DELAY_MS}ms, broadcast: ${FLUID_BROADCAST_INTERVAL_MS}ms`);
+        console.log(`[Smoothing] Interpolation window: ${INTERPOLATION_WINDOW_MS}ms, broadcast: ${FLUID_BROADCAST_INTERVAL_MS}ms`);
         console.log(`[Smoothing] Route capture/release: ${ROUTE_CAPTURE_DISTANCE_METERS}m / ${ROUTE_RELEASE_DISTANCE_METERS}m`);
+
+        routes = await buildRoutes();
+        fluidTracking = new FluidTrackingEngine(routes, {
+            interpolationWindowMs: INTERPOLATION_WINDOW_MS,
+            routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
+            routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS
+        });
+        console.log(`[Routes] Loaded ${routes.length} routes for route-lock smoothing`);
 
         if (USE_POLLING) {
             console.log(`[Polling] Starting with interval: ${POLL_INTERVAL_MS / 1000}s`);
@@ -288,6 +298,7 @@ async function startServer() {
         }
 
         broadcastTimer = setInterval(() => {
+            if (!fluidTracking) return;
             latestDisplayLocations = fluidTracking.getDisplayLocations();
             broadcastLocations(latestDisplayLocations);
         }, FLUID_BROADCAST_INTERVAL_MS);
