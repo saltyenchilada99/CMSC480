@@ -1,5 +1,9 @@
 import L from 'leaflet';
-import busIcon from './bus_icon.png';
+// Every image import gives error even though they are extracted successfully.
+import busIconNorth from './North_Bus.png';
+import busIconSouth from './South_Bus.png';
+import busIconEast from './East_Bus.png';
+import busIconWest from './West Bus.png';
 import busStop from './bus_stop_icon.png';
 import academic from './academic_icon.png';
 import dorm from './dorm_icon.png';
@@ -29,7 +33,11 @@ function buildIcon(iconUrl: string) {
 }
 
 export function GetBusIcon(icon: string) {
-    const imgURL = icon === "busIcon" ? busIcon : busStop;
+    const faceW = Math.round(MARKER_WIDTH * 0.52);
+    const faceH = Math.max(34, Math.round(MARKER_HEIGHT * 0.82));
+    const sideW = Math.round((MARKER_WIDTH - faceW) / 2);
+    const sideH = Math.round(MARKER_HEIGHT * 0.5);
+    const imgURL = icon === "busIconNorth" ? busIconNorth : icon === "busIconSouth" ? busIconSouth : icon === "busIconEast" ? busIconEast : busIconWest;
     return buildIcon(imgURL);
 }
 

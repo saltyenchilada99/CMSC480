@@ -67,23 +67,32 @@ export function Bus() {
   const { buses } = useContext(BusContext);
 
   return (
-        buses.map((bus: { id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }) => (
-          <Marker
-            key={bus.id}
-            position={[bus.lat, bus.lng]}
-            icon={GetBusIcon("busIcon")}
-            zIndexOffset={1000}
-          >
-            <Popup>
-              <strong>{bus.name || bus.id}</strong><br />
-              Status: {bus.status}<br />
-              Speed: {bus.speed} mph<br />
-              Heading: {bus.heading}°<br />
-              {bus.address && <>Address: {bus.address}<br /></>}
-              {bus.driver && <>Driver: {bus.driver}<br /></>}
-              Updated: {bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}
-            </Popup>
-          </Marker>
-        ))
+        buses.map((bus: { id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }) => {
+          const h = ((bus.heading ?? 0) % 360 + 360) % 360;
+          var iconAddress = "";
+          if (h >= 315 || h < 45) iconAddress = "busIconNorth";
+          else if (h >= 45 && h < 135) iconAddress="busIconEast";
+          else if (h >= 135 && h < 225) iconAddress="busIconSouth";
+          else iconAddress="busIconWest";
+
+          return (
+            <Marker
+              key={bus.id}
+              position={[bus.lat, bus.lng]}
+              icon={GetBusIcon(iconAddress)}
+              zIndexOffset={1000}
+            >
+              <Popup>
+                <strong>{bus.name || bus.id}</strong><br />
+                Status: {bus.status}<br />
+                Speed: {bus.speed} mph<br />
+                Heading: {bus.heading}°<br />
+                {bus.address && <>Address: {bus.address}<br /></>}
+                {bus.driver && <>Driver: {bus.driver}<br /></>}
+                Updated: {bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}
+              </Popup>
+            </Marker>
+          );
+        })
   );
 }
