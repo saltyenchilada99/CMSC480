@@ -10,6 +10,7 @@ import dorm from './dorm_icon.png';
 import food from './food_icon.svg';
 import recreation from './recreation_icon.svg';
 import userTracker from './user_tracker_icon.png';
+import '../App.css';
 
 const MARKER_WIDTH = 108;
 const MARKER_HEIGHT = 81;
@@ -37,8 +38,10 @@ function withHitPadding(crop: MarkerCrop): MarkerCrop {
 }
 
 const ACADEMIC_CROP: MarkerCrop = withHitPadding({ left: 28, top: 6, width: 52, height: 68 });
-const DORM_CROP: MarkerCrop = withHitPadding({ left: 30, top: 5, width: 50, height: 68 });
-const BUS_STOP_CROP: MarkerCrop = withHitPadding({ left: 31, top: 4, width: 46, height: 70 });
+const BUS_VERTICAL: MarkerCrop = withHitPadding({ left: 28, top: 6, width: 90, height: 105 });
+const BUS_HORIZONTAL: MarkerCrop = withHitPadding({ left: 28, top: 6, width: 135, height: 135 });
+const DORM_CROP: MarkerCrop = withHitPadding({ left: 30, top: 5, width: 32, height: 48 });
+const BUS_STOP_CROP: MarkerCrop = withHitPadding({ left: 31, top: 4, width: 146, height: 170 });
 const BUS_CROP: MarkerCrop = withHitPadding({ left: 26, top: 5, width: 58, height: 67 });
 const FOOD_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54, height: 60 });
 const RECREATION_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54, height: 60 });
@@ -46,24 +49,34 @@ const RECREATION_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54
 function buildIcon(
     iconUrl: string,
     crop: MarkerCrop,
-    anchorY = DEFAULT_ANCHOR_Y
+    anchorY = DEFAULT_ANCHOR_Y,
+    busVertical = false
 ) {
     const iconAnchorY = anchorY - crop.top;
     const popupOffsetY = -iconAnchorY + POPUP_BORDER_OFFSET;
+    const adjustedAnchorY = busVertical ? crop.height : crop.height * 0.75;
 
     return L.divIcon({
-        className: 'marker-pin-icon',
-        html: '<div class="marker-pin-icon-wrapper" style="width:' + crop.width + 'px;height:' + crop.height + 'px;"><img alt="" class="marker-pin-icon-img" src="' + iconUrl + '" draggable="false" style="width:' + MARKER_WIDTH + 'px;height:' + MARKER_HEIGHT + 'px;left:-' + crop.left + 'px;top:-' + crop.top + 'px;"></div>',
+        className: '',
+        html: `
+    <div class="marker-pin-icon-wrapper"
+         style="width:${crop.width}px;height:${crop.height}px;">
+      <img
+        class="marker-pin-icon-img"
+        src="${iconUrl}"
+        draggable="false"
+        style="width:100%;height:100%;object-fit:contain;">
+    </div>
+  `,
         iconSize: [crop.width, crop.height],
-        iconAnchor: [MARKER_CENTER_X - crop.left, iconAnchorY],
-        popupAnchor: [0, popupOffsetY],
+        iconAnchor: [crop.width / 2, adjustedAnchorY]
     });
 }
 
-const BUS_ICON_NORTH = buildIcon(busIconNorth, BUS_CROP, BUS_ANCHOR_Y);
-const BUS_ICON_SOUTH = buildIcon(busIconSouth, BUS_CROP, BUS_ANCHOR_Y);
-const BUS_ICON_EAST = buildIcon(busIconEast, BUS_CROP, BUS_ANCHOR_Y);
-const BUS_ICON_WEST = buildIcon(busIconWest, BUS_CROP, BUS_ANCHOR_Y);
+const BUS_ICON_NORTH = buildIcon(busIconNorth, BUS_VERTICAL, BUS_ANCHOR_Y, false);
+const BUS_ICON_SOUTH = buildIcon(busIconSouth, BUS_VERTICAL, BUS_ANCHOR_Y, false);
+const BUS_ICON_EAST = buildIcon(busIconEast, BUS_HORIZONTAL, BUS_ANCHOR_Y, true);
+const BUS_ICON_WEST = buildIcon(busIconWest, BUS_HORIZONTAL, BUS_ANCHOR_Y, true);
 const BUS_STOP_ICON = buildIcon(busStop, BUS_STOP_CROP);
 const ACADEMIC_ICON = buildIcon(academic, ACADEMIC_CROP);
 const DORM_ICON = buildIcon(dorm, DORM_CROP);
@@ -76,12 +89,15 @@ const USER_ICON = L.icon({
 });
 
 export function GetBusIcon(icon: string) {
-    const faceW = Math.round(MARKER_WIDTH * 0.52);
-    const faceH = Math.max(34, Math.round(MARKER_HEIGHT * 0.82));
-    const sideW = Math.round((MARKER_WIDTH - faceW) / 2);
-    const sideH = Math.round(MARKER_HEIGHT * 0.5);
     const imgURL = icon === "busIconNorth" ? busIconNorth : icon === "busIconSouth" ? busIconSouth : icon === "busIconEast" ? busIconEast : busIconWest;
-    return buildIcon(imgURL, ACADEMIC_CROP, BUS_ANCHOR_Y);
+    if (icon === "busIconNorth") {
+        return BUS_ICON_NORTH;
+    } else if (icon === "busIconSouth") {
+        return BUS_ICON_SOUTH;
+    } else if (icon === "busIconEast") {
+        return BUS_ICON_EAST;
+    }
+    return BUS_ICON_WEST;
 }
 
 export function GetBusStopIcon() {
@@ -104,7 +120,7 @@ export function GetRecreationIcon() {
     return RECREATION_ICON;
 }
 
-export function GetUserIcon(icon:string) {
+export function GetUserIcon(icon: string) {
     return USER_ICON;
 }
 
