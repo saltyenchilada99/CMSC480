@@ -213,6 +213,7 @@ wss.on('connection', (ws: WebSocket) => {
 async function buildRoutes(): Promise<BusRoute[]> {
     // Keep backend route-lock smoothing in sync with the currently configured map routes.
     // For now, we guarantee at least Campus Loop support so smoothing and broadcasts are stable.
+    // In the future, this might fetch from a database or GeoJSON file.
     return [
         new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, ROUTE_CAPTURE_DISTANCE_METERS, true)
     ];

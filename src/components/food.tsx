@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 // @ts-ignore
 import { GetFoodIcon } from './busMarkers.tsx';
@@ -149,41 +150,48 @@ const foodLocations: FoodLocation[] = [
     },
 ];
 
-export function Food({ foodVisibility = {} }: { foodVisibility?: Record<string, boolean> }) {
+export const Food = memo(function Food({
+    foodVisibility = {},
+    onMarkerFocus,
+}: {
+    foodVisibility?: Record<string, boolean>;
+    onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void;
+}) {
     return (
         <>
-            {foodLocations.filter((location) => foodVisibility[location.key] !== false).map((location: FoodLocation) => (
+            {foodLocations.filter((location) => foodVisibility[location.key] !== false).map((location: FoodLocation) => {
+                const position: [number, number] = [location.lat, -location.long];
+
+                return (
                 <Marker
                     key={location.key}
-                    position={[location.lat, -location.long]}
+                    position={position}
                     icon={GetFoodIcon()}
+                    bubblingMouseEvents={false}
                     zIndexOffset={500}
+                    eventHandlers={{
+                        click: () => onMarkerFocus?.(position, 'marker'),
+                    }}
                 >
-                    <Popup minWidth={260} maxWidth={300}>
-                        <div style={{ marginBottom: "6px" }}>
-                            <strong style={{ fontSize: "1rem" }}>{location.name}</strong>
-                        </div>
-                        <div style={{ color: "#555", marginBottom: "8px", fontSize: "0.82rem" }}>
-                            {location.desc}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <Popup className="campus-popup campus-popup--food" minWidth={248} maxWidth={304} autoPan={false}>
+                        <div className="info-popup-card info-popup-card--food">
+                            <span className="info-popup-card__eyebrow">Dining</span>
+                            <h3 className="info-popup-card__title">{location.name}</h3>
+                            <p className="info-popup-card__text">{location.desc}</p>
+                            <div className="info-popup-card__stack">
                             {location.venues.map((venue) => (
-                                <div
-                                    key={venue.name}
-                                    style={{
-                                        borderLeft: "3px solid #6e1020",
-                                        paddingLeft: "8px",
-                                    }}
-                                >
-                                    <div style={{ fontWeight: "700", fontSize: "0.82rem" }}>{venue.name}</div>
-                                    <div style={{ fontSize: "0.77rem", color: "#444", marginTop: "2px" }}>{venue.type}</div>
-                                    <div style={{ fontSize: "0.74rem", color: "#777", marginTop: "2px" }}>🕐 {venue.hours}</div>
+                                <div key={venue.name} className="info-popup-card__venue">
+                                    <div className="info-popup-card__venue-name">{venue.name}</div>
+                                    <div className="info-popup-card__venue-text">{venue.type}</div>
+                                    <div className="info-popup-card__meta">Hours: {venue.hours}</div>
                                 </div>
                             ))}
+                            </div>
                         </div>
                     </Popup>
                 </Marker>
-            ))}
+                );
+            })}
         </>
     );
-}
+});
