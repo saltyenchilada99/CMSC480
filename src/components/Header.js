@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import '../styles/Header.css';
+import { busStopLibrary } from './busStop.tsx';
 
-export function Header({ connectionStatus, buses }) {
+export function Header({ connectionStatus, buses, onMarkerFocus }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showBusList, setShowBusList] = useState(false);
   const activeBuses = buses.filter(bus => bus.status !== "Stopped");
+  const [query, setQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const filteredItems = busStopLibrary.filter((stop) =>
+  stop.name.toLowerCase().includes(query.toLowerCase().trim())
+);
 
   // add/remove class on body for modal open state
   React.useEffect(() => {
@@ -17,46 +24,87 @@ export function Header({ connectionStatus, buses }) {
     return () => document.body.classList.remove('modal-open');
   }, [showScheduleModal]);
 
+  function handleSelectStop(stop) {
+    const position = [stop.lat, -stop.long];
+
+    setQuery(stop.name);
+    setShowDropdown(false);
+
+    onMarkerFocus?.(position, 'marker', 18);
+  }
+
   return (
     <>
       <header className="app-header">
-      <div className="header-container">
-        <div className="header-title">
-          <h1>Bloomsburg Campus Bus Tracker</h1>
-        </div>
+        <div className="header-container">
+          <div className="header-title">
+            <h1>Bloomsburg Campus Bus Tracker</h1>
+          </div>
 
-        <nav className="header-nav">
-          <button 
-            className="nav-button"
-            onClick={() => setShowScheduleModal(true)}
+          <nav className="header-nav">
+            <button
+              className="nav-button"
+              onClick={() => setShowScheduleModal(true)}
+            >
+              Bus Schedule
+            </button>
+          </nav>
+
+          <div
+            className="search-container"
+            onFocus={() => setShowDropdown(true)}
+            onBlur={() => setShowDropdown(false)}
           >
-            Bus Schedule
-          </button>
-        </nav>
+            <input
+              type="search"
+              className="search-input"
+              placeholder="Search bus stops..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
 
-        {/* Live Connection of Buses */}
-        <div className={`status-badge ${connectionStatus === 'Live' ? 'live' : 'offline'}`}
-             onMouseEnter={() => setShowBusList(true)}
-             onMouseLeave={() => setShowBusList(false)}
-        >
-          <span className="status-dot"></span>
-          {connectionStatus} {buses.length > 0 ? `· ${buses.length} bus${buses.length !== 1 ? 'es' : ''}` : ''}
+            {showDropdown && (
+              <ul className="search-dropdown">
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((stop) => (
+                    <li
+                      key={stop.key}
+                      className="dropdown-item"
+                      onMouseDown={() => handleSelectStop(stop)}
+                    >
+                      {stop.name}
+                    </li>
+                  ))
+                ) : (
+                  <li className="dropdown-item">No results found</li>
+                )}
+              </ul>
+            )}
+          </div>
 
-          {showBusList && (
+          {/* Live Connection of Buses */}
+          <div className={`status-badge ${connectionStatus === 'Live' ? 'live' : 'offline'}`}
+            onMouseEnter={() => setShowBusList(true)}
+            onMouseLeave={() => setShowBusList(false)}
+          >
+            <span className="status-dot"></span>
+            {connectionStatus} {buses.length > 0 ? `· ${buses.length} bus${buses.length !== 1 ? 'es' : ''}` : ''}
+
+            {showBusList && (
               <div className="bus-list-dropdown">
                 {activeBuses.length === 0 ? (
-                    <div className="bus-list-item">No active buses</div>
+                  <div className="bus-list-item">No active buses</div>
                 ) : (
-                    activeBuses.map((bus, index) => (
-                        <div key={index} className="bus-list-item">
-                          {bus.id || index + 1}
-                        </div>
-                    ))
+                  activeBuses.map((bus, index) => (
+                    <div key={index} className="bus-list-item">
+                      {bus.id || index + 1}
+                    </div>
+                  ))
                 )}
               </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
       </header>
 
       {/* Bus Schedule Modal — rendered via portal to escape header stacking context */}
@@ -92,9 +140,9 @@ export function Header({ connectionStatus, buses }) {
             </div>
             <div className="modal-footer">
               <a href="https://www.commonwealthu.edu/campus-life/bloomsburg/parking-and-transportation"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="modal-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="modal-link"
               >
                 View Full Transportation Info
               </a>

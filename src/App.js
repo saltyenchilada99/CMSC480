@@ -138,7 +138,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Header connectionStatus={connectionStatus} buses={buses} />
+      <Header connectionStatus={connectionStatus} buses={buses} onMarkerFocus={handleMarkerFocus} />
       <div id="body">
         <SubHeader
           onBusesToggle={setShowBuses}

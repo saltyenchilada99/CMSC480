@@ -38,7 +38,7 @@ class busStop {
     key!: string;
 }
 
-const busStopLibrary: busStop[] = [{
+export const busStopLibrary: busStop[] = [{
     name: "Library, A&A Building",
     lat: 41.00865,
     long: 76.44525,
@@ -101,7 +101,7 @@ const busStopLibrary: busStop[] = [{
     img: '/busStopImages/warhurst_apartments.png',
     key: 'BS-7'
 }, {
-    name: "Wal‑Mart",
+    name: "Walmart",
     lat: 41.00872,
     long: 76.48541,
     desc: 'The Walmart Supercenter acts as a direct link for students to perform shopping for any ' +

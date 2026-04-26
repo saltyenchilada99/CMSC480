@@ -12,9 +12,9 @@
 }
 
 .header-container {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0.65rem 1.75rem;
   gap: 1rem;
 }
@@ -289,4 +289,35 @@ body.modal-open .leaflet-top {
     width: 96%;
     max-height: 90vh;
   }
+}
+
+-----------
+
+.search-container {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  width: 250px;
+}
+
+.search-dropdown {
+  position: absolute;
+
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 250px;
+
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  padding: 8px 10px;
+  cursor: pointer;
+  color: black;
+}
+
+.dropdown-item:hover {
+  background: #f5f5f5;
 }
