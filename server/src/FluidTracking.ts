@@ -23,6 +23,7 @@ export interface FluidTrackingOptions {
 
 export class FluidTrackingEngine {
     private readonly routes: BusRoute[];
+    private readonly routeByName: Map<string, BusRoute>;
     private readonly delayMs: number;
     private readonly maxSampleAgeMs: number;
     private readonly maxFutureSkewMs: number;
@@ -34,6 +35,8 @@ export class FluidTrackingEngine {
 
     constructor(routes: BusRoute[], options: FluidTrackingOptions = {}) {
         this.routes = routes;
+        // Route lookup is hot during interpolation; cache by name once.
+        this.routeByName = new Map(routes.map(route => [route.name, route]));
         this.delayMs = options.delayMs ?? 30_000;
         this.maxSampleAgeMs = options.maxSampleAgeMs ?? 10 * 60 * 1000;
         this.maxFutureSkewMs = options.maxFutureSkewMs ?? 60_000;
@@ -121,14 +124,21 @@ export class FluidTrackingEngine {
             if (dupIndex >= 0) {
                 existing[dupIndex] = sample;
             } else {
+                // Internal timestamps are monotonic per bus, so append keeps order.
                 existing.push(sample);
             }
 
-            existing.sort((a, b) => a.timestampMs - b.timestampMs);
-
+            // Trim old history in-place to reduce allocations in the ingest hot path.
             const minAllowedTs = now - this.maxSampleAgeMs;
-            const pruned = existing.filter(item => item.timestampMs >= minAllowedTs);
-            this.historyByBus.set(id, pruned);
+            let firstValidIndex = 0;
+            while (firstValidIndex < existing.length && existing[firstValidIndex].timestampMs < minAllowedTs) {
+                firstValidIndex += 1;
+            }
+            if (firstValidIndex > 0) {
+                existing.splice(0, firstValidIndex);
+            }
+
+            this.historyByBus.set(id, existing);
         }
     }
 
@@ -239,7 +249,8 @@ export class FluidTrackingEngine {
             prev.distanceToRouteMeters <= this.routeReleaseDistanceMeters &&
             next.distanceToRouteMeters <= this.routeReleaseDistanceMeters
         ) {
-            const route = this.routes.find(item => item.name === prev.routeName);
+            const routeName = prev.routeName;
+            const route = routeName ? this.routeByName.get(routeName) : undefined;
             if (route) {
                 const total = route.getTotalMeters();
                 const start = prev.routeProgressMeters;

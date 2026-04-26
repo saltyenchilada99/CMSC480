@@ -247,7 +247,7 @@ async function startServer() {
 
         routes = await buildRoutes();
         fluidTracking = new FluidTrackingEngine(routes, {
-            interpolationWindowMs: INTERPOLATION_WINDOW_MS,
+            delayMs: INTERPOLATION_WINDOW_MS,
             routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
             routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS
         });
