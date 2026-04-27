@@ -158,6 +158,8 @@ const academicBuildings: AcademicBuilding[] = [{
 }];
 
 export const Academic = memo(function Academic({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+    const academicIcon = GetAcademicIcon();
+
     return (
         academicBuildings.map((academic: AcademicBuilding) => {
             const position: [number, number] = [academic.lat, -academic.long];
@@ -166,7 +168,7 @@ export const Academic = memo(function Academic({ onMarkerFocus }: { onMarkerFocu
             <Marker
                 key={`${academic.key}`}
                 position={position}
-                icon={GetAcademicIcon()}
+                icon={academicIcon}
                 bubblingMouseEvents={false}
                 zIndexOffset={500}
                 eventHandlers={{

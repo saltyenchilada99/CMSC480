@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Polyline } from "react-leaflet";
+import polyline from "@mapbox/polyline";
 
 type LatLng = [number, number];
 
@@ -34,13 +35,14 @@ export function CampusLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boole
                     .map(([lat, lng]) => `${lng},${lat}`)
                     .join(";");
 
-                const url = `https://router.project-osrm.org/route/v1/foot/${coordString}?overview=full&geometries=geojson`;
+                const url = `https://router.project-osrm.org/route/v1/foot/${coordString}?overview=full&geometries=polyline`;
                 const res = await fetch(url);
                 const json = await res.json();
 
                 if (!json.routes || !json.routes[0]) return;
 
-                const osrmCoords: LatLng[] = json.routes[0].geometry.coordinates.map(
+                // Decode polyline to get coordinates (more efficient than geojson)
+                const osrmCoords: LatLng[] = polyline.toGeoJSON(json.routes[0].geometry).coordinates.map(
                     ([lng, lat]: [number, number]) => [lat, lng]
                 );
 

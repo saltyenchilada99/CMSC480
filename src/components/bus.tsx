@@ -65,13 +65,14 @@ export function BusProvider({ children } : {children : React.ReactNode} ) {
 export const Bus = memo(function Bus({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
   // No given type but output is not affected
   const { buses } = useContext(BusContext);
+  const busIcon = GetBusIcon('busIcon');
 
   return (
         buses.map((bus: { id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }) => (
           <Marker
             key={bus.id}
             position={[bus.lat, bus.lng]}
-            icon={GetBusIcon("busIcon")}
+            icon={busIcon}
             bubblingMouseEvents={false}
             zIndexOffset={1000}
             eventHandlers={{

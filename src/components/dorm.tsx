@@ -158,6 +158,8 @@ const dormLocations: DormLocation[] = [{
 }];
 
 export const Dorm = memo(function Dorm({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+    const dormIcon = GetDormIcon();
+
     return (
         dormLocations.map((dorm: DormLocation) => {
             const position: [number, number] = [dorm.lat, -dorm.long];
@@ -166,7 +168,7 @@ export const Dorm = memo(function Dorm({ onMarkerFocus }: { onMarkerFocus?: (cen
             <Marker
                 key={`${dorm.key}`}
                 position={position}
-                icon={GetDormIcon()}
+                icon={dormIcon}
                 bubblingMouseEvents={false}
                 zIndexOffset={500}
                 eventHandlers={{
