@@ -72,6 +72,7 @@ export const Bus = memo(function Bus({
   const busContext = useContext(BusContext);
   const { buses: busesFromContext } = busContext || { buses: [] };
   const buses = busesProp ?? busesFromContext;
+
   return (
         buses.map((bus: { id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }) => {
           let iconAddress = "";

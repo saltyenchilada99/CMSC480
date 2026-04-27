@@ -5,6 +5,7 @@ import './components/UserTracker.css';
 
 export const UserLocationMap = memo(function UserLocationMap({ userPos, onMarkerFocus }) {
     if (!userPos) return null;
+    const userIcon = GetUserIcon('userIcon');
 
     return (
         <>
@@ -22,7 +23,7 @@ export const UserLocationMap = memo(function UserLocationMap({ userPos, onMarker
 
             <Marker
                 position={userPos}
-                icon={GetUserIcon("userIcon")}
+                icon={userIcon}
                 bubblingMouseEvents={false}
                 eventHandlers={{
                     click: () => onMarkerFocus?.(userPos, 'user'),
