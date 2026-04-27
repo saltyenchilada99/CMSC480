@@ -62,9 +62,16 @@ export function BusProvider({ children } : {children : React.ReactNode} ) {
   );
 }
 
-export const Bus = memo(function Bus({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+export const Bus = memo(function Bus({
+  buses: busesProp,
+  onMarkerFocus,
+}: {
+  buses?: Array<{ id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }>;
+  onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void;
+}) {
   const busContext = useContext(BusContext);
-  const { buses } = busContext || { buses: [] };
+  const { buses: busesFromContext } = busContext || { buses: [] };
+  const buses = busesProp ?? busesFromContext;
   return (
         buses.map((bus: { id: string; lat: number; lng: number; name?: string; status?: string; speed?: number; heading?: number; address?: string; driver?: string; lastUpdated?: string }) => {
           let iconAddress = "";

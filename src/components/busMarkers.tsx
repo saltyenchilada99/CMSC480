@@ -89,7 +89,6 @@ const USER_ICON = L.icon({
 });
 
 export function GetBusIcon(icon: string) {
-    const imgURL = icon === "busIconNorth" ? busIconNorth : icon === "busIconSouth" ? busIconSouth : icon === "busIconEast" ? busIconEast : busIconWest;
     if (icon === "busIconNorth") {
         return BUS_ICON_NORTH;
     } else if (icon === "busIconSouth") {
@@ -99,7 +98,6 @@ export function GetBusIcon(icon: string) {
     }
     return BUS_ICON_WEST;
 }
-
 export function GetBusStopIcon() {
     return BUS_STOP_ICON;
 }

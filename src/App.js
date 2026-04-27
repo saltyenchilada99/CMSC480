@@ -16,6 +16,7 @@ import { Recreation } from './components/Recreation.tsx';
 import { Dorm } from './components/dorm.tsx';
 import { Food } from './components/food.tsx';
 import { UserLocationMap } from "./UserTracker";
+import { DEFAULT_BUS_STATUS_OPTIONS } from './components/SubHeader';
 import { MapViewportController } from './components/MapViewportController.tsx';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -72,8 +73,39 @@ function App() {
     [41.0300, -76.4300]
   ];
   const [showFood, setShowFood] = useState(false);
+  const [busStatusVisibility, setBusStatusVisibility] = useState(DEFAULT_BUS_STATUS_OPTIONS);
+  const [trackingMode, setTrackingMode] = useState('fluid');
   const [foodVisibility, setFoodVisibility] = useState({
     'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
+  });
+
+  const getStatusCategory = (status) => {
+    const normalized = String(status ?? '').trim().toLowerCase();
+    if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
+    if (normalized === 'idle' || normalized === 'idling') return 'idle';
+    if (normalized === 'stopped' || normalized === 'stop') return 'stopped';
+    if (normalized === 'nodata' || normalized === 'no data') return 'stopped';
+    return 'stopped';
+  };
+
+  const filteredBuses = buses.filter((bus) => {
+    const category = getStatusCategory(bus.status);
+    return !!busStatusVisibility[category];
+  });
+
+  const displayBuses = filteredBuses.map((bus) => {
+    const lat = trackingMode === 'ping'
+      ? (bus.pingLat ?? bus.lat)
+      : (bus.fluidLat ?? bus.lat);
+    const lng = trackingMode === 'ping'
+      ? (bus.pingLng ?? bus.lng)
+      : (bus.fluidLng ?? bus.lng);
+
+    return {
+      ...bus,
+      lat,
+      lng,
+    };
   });
 
   useEffect(() => {
@@ -152,6 +184,8 @@ function App() {
           onDormsToggle={setShowDorms}
           onFoodToggle={setShowFood}
           onFoodOptionsToggle={setFoodVisibility}
+          onBusStatusOptionsToggle={setBusStatusVisibility}
+          onTrackingModeChange={setTrackingMode}
         />
         <MapContainer
             center={CAMPUS_CENTER}
@@ -172,7 +206,7 @@ function App() {
           />
           {showUserLocation && <UserLocationMap userPos={userPosition} onMarkerFocus={handleMarkerFocus} />}
 
-          {showBuses && <Bus onMarkerFocus={handleMarkerFocus} />}
+          {showBuses && <Bus buses={displayBuses} onMarkerFocus={handleMarkerFocus} />}
           {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} />}
           {showRecreation && <Recreation onMarkerFocus={handleMarkerFocus} />}
           {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} />}

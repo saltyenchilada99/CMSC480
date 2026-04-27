@@ -319,6 +319,59 @@ html, body, #root {
   margin-left: auto;
 }
 
+.tracking-mode-group {
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(110, 16, 32, 0.06);
+  border: 1px solid rgba(110, 16, 32, 0.14);
+}
+
+.tracking-mode-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #6e1020;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.tracking-mode-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.tracking-mode-btn {
+  padding: 7px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(110, 16, 32, 0.28);
+  background: #ffffff;
+  color: #5f0e1b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.tracking-mode-btn:hover {
+  background: rgba(110, 16, 32, 0.08);
+}
+
+.tracking-mode-btn.active {
+  background: #6e1020;
+  color: #fff;
+  border-color: #6e1020;
+  box-shadow: 0 0 0 2px rgba(110, 16, 32, 0.24);
+}
+
+.tracking-mode-current {
+  margin-top: 7px;
+  font-size: 0.75rem;
+  color: #3f0a13;
+}
+
 /* Panel divider */
 .panel-divider {
   height: 1px;

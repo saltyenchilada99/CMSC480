@@ -28,8 +28,6 @@ const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVA
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
 const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
-const FLUID_DELAY_MS = INTERPOLATION_WINDOW_MS + ADAPTIVE_DELAY_BUFFER_MS;
-const STOPPED_HIDE_DELAY_MS = 60 * 1000;
 
 const CAMPUS_LOOP_PATH: LatLng[] = [
     { lat: 41.008689, lng: -76.445122 },
@@ -87,56 +85,20 @@ let routes: BusRoute[] = [];
 let fluidTracking: FluidTrackingEngine | null = null;
 
 const wsClients = new Set<WebSocket>();
-const stoppedSinceMsByVehicle = new Map<string, number>();
 
-function isStoppedStatus(status: unknown): boolean {
-    const normalizedStatus = String(status ?? '').trim().toLowerCase();
-    if (normalizedStatus.includes('idle')) {
-        return false;
-    }
-    return normalizedStatus.includes('stopped');
-}
+function mapLocationForClient(loc: VehicleLocation, rawLoc?: VehicleLocation) {
+    const pingLat = rawLoc?.Latitude ?? loc.Latitude;
+    const pingLng = rawLoc?.Longitude ?? loc.Longitude;
 
-function getVisibleLocations(locations: VehicleLocation[]): VehicleLocation[] {
-    const nowMs = Date.now();
-    const activeVehicleIds = new Set<string>();
-
-    const visible = locations.filter(loc => {
-        const vehicleId = String(loc.VehicleNumber ?? '');
-        if (!vehicleId) {
-            return !isStoppedStatus(loc.Status);
-        }
-
-        activeVehicleIds.add(vehicleId);
-
-        if (!isStoppedStatus(loc.Status)) {
-            stoppedSinceMsByVehicle.delete(vehicleId);
-            return true;
-        }
-
-        const firstStoppedMs = stoppedSinceMsByVehicle.get(vehicleId) ?? nowMs;
-        if (!stoppedSinceMsByVehicle.has(vehicleId)) {
-            stoppedSinceMsByVehicle.set(vehicleId, firstStoppedMs);
-        }
-
-        return (nowMs - firstStoppedMs) < STOPPED_HIDE_DELAY_MS;
-    });
-
-    for (const vehicleId of stoppedSinceMsByVehicle.keys()) {
-        if (!activeVehicleIds.has(vehicleId)) {
-            stoppedSinceMsByVehicle.delete(vehicleId);
-        }
-    }
-
-    return visible;
-}
-
-function mapLocationForClient(loc: VehicleLocation) {
     return {
         id: loc.VehicleNumber,
         name: loc.VehicleName,
         lat: loc.Latitude,
         lng: loc.Longitude,
+        fluidLat: loc.Latitude,
+        fluidLng: loc.Longitude,
+        pingLat,
+        pingLng,
         heading: loc.Heading,
         speed: loc.Speed,
         status: loc.Status,
@@ -152,12 +114,12 @@ function mapLocationForClient(loc: VehicleLocation) {
 }
 
 function broadcastLocations(locations: VehicleLocation[]): void {
-    const visibleLocations = getVisibleLocations(locations);
+    const rawByVehicleId = new Map(latestRawLocations.map(raw => [raw.VehicleNumber, raw]));
     const message = JSON.stringify({
         type: 'location_update',
         timestamp: new Date().toISOString(),
-        delayedByMs: FLUID_DELAY_MS,
-        buses: visibleLocations.map(mapLocationForClient)
+        delayedByMs: INTERPOLATION_WINDOW_MS,
+        buses: locations.map(loc => mapLocationForClient(loc, rawByVehicleId.get(loc.VehicleNumber)))
     });
 
     wsClients.forEach(client => {
@@ -198,14 +160,14 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.get('/api/buses', (_req: Request, res: Response) => {
-    const visibleLocations = getVisibleLocations(latestDisplayLocations);
+    const rawByVehicleId = new Map(latestRawLocations.map(raw => [raw.VehicleNumber, raw]));
     res.json({
         success: true,
         timestamp: new Date().toISOString(),
-        delayedByMs: FLUID_DELAY_MS,
-        count: visibleLocations.length,
+        delayedByMs: INTERPOLATION_WINDOW_MS,
+        count: latestDisplayLocations.length,
         rawCount: latestRawLocations.length,
-        buses: visibleLocations.map(mapLocationForClient)
+        buses: latestDisplayLocations.map(loc => mapLocationForClient(loc, rawByVehicleId.get(loc.VehicleNumber)))
     });
 });
 
@@ -235,12 +197,12 @@ wss.on('connection', (ws: WebSocket) => {
     wsClients.add(ws);
 
     if (latestDisplayLocations.length > 0) {
-        const visibleLocations = getVisibleLocations(latestDisplayLocations);
+        const rawByVehicleId = new Map(latestRawLocations.map(raw => [raw.VehicleNumber, raw]));
         ws.send(JSON.stringify({
             type: 'location_update',
             timestamp: new Date().toISOString(),
-            delayedByMs: FLUID_DELAY_MS,
-            buses: visibleLocations.map(mapLocationForClient)
+            delayedByMs: INTERPOLATION_WINDOW_MS,
+            buses: latestDisplayLocations.map(loc => mapLocationForClient(loc, rawByVehicleId.get(loc.VehicleNumber)))
         }));
     }
 
@@ -249,9 +211,11 @@ wss.on('connection', (ws: WebSocket) => {
 });
 
 async function buildRoutes(): Promise<BusRoute[]> {
+    // Keep backend route-lock smoothing in sync with the currently configured map routes.
+    // For now, we guarantee at least Campus Loop support so smoothing and broadcasts are stable.
     // In the future, this might fetch from a database or GeoJSON file.
     return [
-        new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, ROUTE_RELEASE_DISTANCE_METERS, true)
+        new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, ROUTE_CAPTURE_DISTANCE_METERS, true)
     ];
 }
 
@@ -284,7 +248,7 @@ async function startServer() {
 
         routes = await buildRoutes();
         fluidTracking = new FluidTrackingEngine(routes, {
-            interpolationWindowMs: INTERPOLATION_WINDOW_MS,
+            delayMs: INTERPOLATION_WINDOW_MS,
             routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
             routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS
         });
