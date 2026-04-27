@@ -15,7 +15,7 @@ type AcademicBuilding = {
     link: string;
 };
 
-const academicBuildings: AcademicBuilding[] = [{
+export const academicBuildings: AcademicBuilding[] = [{
     name: "Arts & Administration Building",
     lat: 41.00827,
     long: 76.44522,

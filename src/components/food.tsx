@@ -18,7 +18,7 @@ type FoodLocation = {
     key: string;
 };
 
-const foodLocations: FoodLocation[] = [
+export const foodLocations: FoodLocation[] = [
     {
         name: "Scranton Commons",
         lat: 41.00585,

@@ -15,7 +15,7 @@ type RecreationLocation = {
     link: string;
 };
 
-const recreationLocations: RecreationLocation[] = [{
+export const recreationLocations: RecreationLocation[] = [{
     name: "Student Recreation Center",
     lat: 41.01097490879618,
     long: 76.4432801284402,

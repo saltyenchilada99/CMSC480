@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import '../styles/Header.css';
 import { busStopLibrary } from './busStop.tsx';
+import { dormLocations } from './dorm.tsx';
+import { academicBuildings } from './Academic.tsx';
+import { recreationLocations } from './Recreation.tsx';
+import { foodLocations } from './food.tsx';
+
 
 export function Header({ connectionStatus, buses, onMarkerFocus }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -11,8 +16,27 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const filteredItems = busStopLibrary.filter((stop) =>
-  stop.name.toLowerCase().includes(query.toLowerCase().trim())
-);
+  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
+
+  const filteredItems2 = dormLocations.filter((stop) =>
+  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
+
+  const filteredItems3 = academicBuildings.filter((stop) =>
+  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
+
+  const filteredItems4 = recreationLocations.filter((stop) =>
+  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
+
+  const filteredItems5 = foodLocations.filter((stop) =>
+  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
+
+  const allFilteredItems = [
+    ...filteredItems,
+    ...filteredItems2,
+    ...filteredItems3,
+    ...filteredItems4,
+    ...filteredItems5
+  ];
 
   // add/remove class on body for modal open state
   React.useEffect(() => {
@@ -24,10 +48,10 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
     return () => document.body.classList.remove('modal-open');
   }, [showScheduleModal]);
 
-  function handleSelectStop(stop) {
-    const position = [stop.lat, -stop.long];
+  function handleSelectLocation(loc) {
+    const position = [loc.lat, -loc.long];
 
-    setQuery(stop.name);
+    setQuery(loc.name);
     setShowDropdown(false);
 
     onMarkerFocus?.(position, 'marker', 18);
@@ -65,14 +89,14 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
 
             {showDropdown && (
               <ul className="search-dropdown">
-                {filteredItems.length > 0 ? (
-                  filteredItems.map((stop) => (
+                {allFilteredItems.length > 0 ? (
+                  allFilteredItems.map((loc) => (
                     <li
-                      key={stop.key}
+                      key={loc.key}
                       className="dropdown-item"
-                      onMouseDown={() => handleSelectStop(stop)}
+                      onMouseDown={() => handleSelectLocation(loc)}
                     >
-                      {stop.name}
+                      {loc.name}
                     </li>
                   ))
                 ) : (

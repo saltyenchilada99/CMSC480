@@ -15,7 +15,7 @@ type DormLocation = {
     link: string;
 };
 
-const dormLocations: DormLocation[] = [{
+export const dormLocations: DormLocation[] = [{
     name: "Columbia Hall",
     lat: 41.00802,
     long: 76.45013,
