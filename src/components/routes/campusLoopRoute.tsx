@@ -5,13 +5,15 @@ import polyline from "@mapbox/polyline";
 type LatLng = [number, number];
 
 const stops: LatLng[] = [
-    [41.00864, -76.44540], // Arts & Administration Building
-    [41.01434, -76.44654], // Montgomery Place Apartments (MPA)
-    [41.01640, -76.44624], // Mount Olympus Apartments (MOA)
-    [41.01740, -76.45308], // Jessica Kozloff Apartments (JKA)
-    [41.01525, -76.44961], // Nelson Field House
-    [41.01751, -76.45038], // Orange Lot (Upper Campus Parking)
-    [41.00880, -76.44506], // Back to A&A (closes the loop)
+    [41.008674, -76.445245], // Library
+    [41.009118, -76.447059], // Mccormic
+    [41.015415, -76.450112], // Nelson Field
+    [41.014352, -76.446527], // Montgomery Place Apts
+    [41.016437, -76.445937], // Mt Olympus Apts
+    [41.018184, -76.44886], // Orange Lot
+    [41.017498, -76.450388], // Stadium
+    [41.017353, -76.453079], // JKA Apts
+    [41.008674, -76.445245], // Back to Library (closes the loop)
 ];
 
 // This is a sort of bandaid solution to the bugged tracing through the A&A parking lot
