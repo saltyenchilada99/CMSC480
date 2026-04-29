@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import L from 'leaflet';
-import {Bus, BusContext} from './components/bus.tsx';
+import { Bus, BusContext } from './components/bus.tsx';
 import { BusStop } from './components/busStop.tsx';
 import { CampusLoopRoute } from './components/routes/campusLoopRoute.tsx';
 import { DowntownLoopRoute } from './components/routes/downtownLoopRoute.tsx';
@@ -47,6 +47,7 @@ function buildBaseFocus(userPosition, showUserLocation) {
 }
 
 function App() {
+  const mapRef = useRef(null);
   const [showBuses, setShowBuses] = useState(true);
   const [showStops, setShowStops] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
@@ -78,6 +79,7 @@ function App() {
   const [foodVisibility, setFoodVisibility] = useState({
     'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
   });
+  const [zoom, setZoom] = useState(16);
 
   const getStatusCategory = (status) => {
     const normalized = String(status ?? '').trim().toLowerCase();
@@ -168,6 +170,7 @@ function App() {
     });
   }, []);
 
+
   return (
     <div className="app-container">
       <Header connectionStatus={connectionStatus} buses={buses} onMarkerFocus={handleMarkerFocus} />
@@ -188,12 +191,19 @@ function App() {
           onTrackingModeChange={setTrackingMode}
         />
         <MapContainer
-            center={CAMPUS_CENTER}
-            zoom={CAMPUS_ZOOM}
-            minZoom={14}
-            maxZoom={18}
-            maxBounds={bloomsburgBounds}
-            maxBoundsViscosity={1.0}
+          center={CAMPUS_CENTER}
+          zoom={CAMPUS_ZOOM}
+          minZoom={14}
+          maxZoom={18}
+          maxBounds={bloomsburgBounds}
+          maxBoundsViscosity={1.0}
+          whenCreated={(map) => {
+            mapRef.current = map;
+          }}
+          onZoomEnd={() => {
+            setZoom(mapRef.current.getZoom());
+            console.log(zoom);
+          }}
         >
           <MapViewportController
             focusTarget={focusTarget}
