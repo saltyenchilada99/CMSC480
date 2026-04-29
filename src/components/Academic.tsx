@@ -3,6 +3,8 @@ import { Marker, Popup } from 'react-leaflet';
 import { GetAcademicIcon } from './busMarkers.tsx';
 import { MarkerPopupCard } from './MarkerPopupCard.tsx';
 
+const minZoom : number = 17;
+
 type AcademicBuilding = {
     name: string;
     lat: number;
@@ -171,11 +173,11 @@ export const academicBuildings: AcademicBuilding[] = [{
     link: 'https://www.commonwealthu.edu/offices-directory/arts-bloom/facilities/gallery-greenly-center',
 }];
 
-export const Academic = memo(function Academic({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+export const Academic = memo(function Academic({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
     const academicIcon = GetAcademicIcon();
 
     return (
-        academicBuildings.map((academic: AcademicBuilding) => {
+        academicBuildings.filter((academic) => zoom >= minZoom).map((academic: AcademicBuilding) => {
             const position: [number, number] = [academic.lat, -academic.long];
 
             return (

@@ -18,6 +18,7 @@ import { Food } from './components/food.tsx';
 import { UserLocationMap } from "./UserTracker";
 import { DEFAULT_BUS_STATUS_OPTIONS } from './components/SubHeader';
 import { MapViewportController } from './components/MapViewportController.tsx';
+import { useMapEvents } from "react-leaflet";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -79,7 +80,6 @@ function App() {
   const [foodVisibility, setFoodVisibility] = useState({
     'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
   });
-  const [zoom, setZoom] = useState(16);
 
   const getStatusCategory = (status) => {
     const normalized = String(status ?? '').trim().toLowerCase();
@@ -132,6 +132,19 @@ function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
+  function ZoomListener({ setZoom }) {
+  useMapEvents({
+    zoomend: (e) => {
+      const map = e.target;
+      const z = map.getZoom();
+
+      console.log("zoom fired:", z);
+      setZoom(z);
+    },
+  });
+
+  return null;
+}
   useEffect(() => {
     if (showUserLocation && userPosition && (!hasAutoCenteredOnUser.current || centerOnUserWhenAvailable.current)) {
       hasAutoCenteredOnUser.current = true;
@@ -170,6 +183,18 @@ function App() {
     });
   }, []);
 
+  //Allows the app to pick up when the map has been zoomed in or out
+  const [zoom, setZoom] = useState(16);
+
+  //Compares current zoom level to minimum zoom requirements for each marker
+  const getMinZoom = (type) => {
+  switch (type) {
+    case "busStop": return 14;
+    case "dorm": return 15;
+    case "building": return 13;
+    default: return 14;
+  }
+};
 
   return (
     <div className="app-container">
@@ -199,12 +224,10 @@ function App() {
           maxBoundsViscosity={1.0}
           whenCreated={(map) => {
             mapRef.current = map;
-          }}
-          onZoomEnd={() => {
-            setZoom(mapRef.current.getZoom());
-            console.log(zoom);
-          }}
+          }} 
         >
+          <ZoomListener setZoom={setZoom} />
+
           <MapViewportController
             focusTarget={focusTarget}
             onResetFocus={handleResetFocus}
@@ -217,15 +240,15 @@ function App() {
           {showUserLocation && <UserLocationMap userPos={userPosition} onMarkerFocus={handleMarkerFocus} />}
 
           {showBuses && <Bus buses={displayBuses} onMarkerFocus={handleMarkerFocus} />}
-          {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} />}
-          {showRecreation && <Recreation onMarkerFocus={handleMarkerFocus} />}
-          {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} />}
-          {showFood && <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} />}
+          {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
+          {showRecreation && <Recreation onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
+          {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
+          {showFood && <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
 
           <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
           <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
           <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
-          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} />}
+          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
         </MapContainer>
       </div>
       <Footer />

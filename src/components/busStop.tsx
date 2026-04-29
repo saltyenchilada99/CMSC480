@@ -15,6 +15,8 @@ const ROUTES: Record<string, RouteInfo> = {
     walmart:  { name: "Walmart Trip",   color: "#0057B8" },
 };
 
+const minZoom = 15;
+
 const STOP_ROUTES: Record<string, RouteInfo[]> = {
     'BS-1':  [ROUTES.campus, ROUTES.walmart],
     'BS-2':  [ROUTES.campus],
@@ -138,9 +140,9 @@ export const busStopLibrary: busStop[] = [{
     key: 'BS-11'
 }];
 
-export const BusStop = memo(function BusStop({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+export const BusStop = memo(function BusStop({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
     return (
-        busStopLibrary.map((busStopItem : busStop) => {
+        busStopLibrary.filter((stop => zoom >= minZoom)).map((busStopItem : busStop) => {
             const position: [number, number] = [busStopItem.lat, -busStopItem.long];
 
             return (
