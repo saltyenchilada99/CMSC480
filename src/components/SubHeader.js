@@ -105,12 +105,13 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onAcademicsToggle, onRecreationToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle, onBusStatusOptionsToggle, onTrackingModeChange }) {
+export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onAcademicsToggle, onRecreationToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle, onBusStatusOptionsToggle, onTrackingModeChange }) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
   const [busStatusOptions, setBusStatusOptions] = useState(DEFAULT_BUS_STATUS_OPTIONS);
   const [trackingMode, setTrackingMode] = useState('fluid');
+  const [activeTab, setActiveTab] = useState('layers');
   const [busesExpanded, setBusesExpanded] = useState(false);
   const [routesExpanded, setRoutesExpanded] = useState(false);
   const [foodExpanded, setFoodExpanded] = useState(false);
@@ -225,8 +226,16 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
     if (onTrackingModeChange) onTrackingModeChange(mode);
   };
 
+  const getStatusCategory = (status) => {
+    const normalized = String(status ?? '').trim().toLowerCase();
+    if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
+    if (normalized === 'idle' || normalized === 'idling') return 'idle';
+    return 'stopped';
+  };
+
+  const visibleBusCount = buses.filter((bus) => busStatusOptions[getStatusCategory(bus.status)]).length;
+
   const layers = [
-    { key: 'buses',     img: busIcon,      label: 'Buses', expandable: 'buses' },
     { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
     { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
@@ -242,8 +251,124 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
         <span>Map Layers</span>
         <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
       </div>
+      <div className="map-layer-tabs" role="tablist" aria-label="Map panel views">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'buses'}
+          className={`map-layer-tab ${activeTab === 'buses' ? 'map-layer-tab--active' : ''}`}
+          onClick={() => setActiveTab('buses')}
+        >
+          Buses
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'layers'}
+          className={`map-layer-tab ${activeTab === 'layers' ? 'map-layer-tab--active' : ''}`}
+          onClick={() => setActiveTab('layers')}
+        >
+          Layers
+        </button>
+      </div>
       <div className="map-layer-panel-body">
-        {layers.map(({ key, icon, img, label, expandable }) => {
+        {activeTab === 'buses' && (
+          <div className="bus-tab-panel">
+            <div className="layer-item bus-tab-toggle" onClick={() => handleToggle('buses')}>
+              <div className="layer-item-left">
+                <img src={busIcon} alt="Buses" className="layer-item-icon-img" />
+                <span className="layer-item-label">Show Buses</span>
+              </div>
+              <Toggle checked={overlays.buses} onChange={() => handleToggle('buses')} />
+            </div>
+
+            <div className="bus-tab-summary">
+              <span className={`bus-tab-status-dot ${connectionStatus === 'Live' ? 'bus-tab-status-dot--live' : ''}`} />
+              <span>{connectionStatus}</span>
+              <strong>{visibleBusCount}/{buses.length} shown</strong>
+            </div>
+
+            <div className="route-suboptions bus-status-options">
+              {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
+                <label key={statusKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                  <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
+                  <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
+                  <input
+                    type="checkbox"
+                    checked={busStatusOptions[statusKey]}
+                    onChange={() => handleBusStatusOptionToggle(statusKey)}
+                  />
+                </label>
+              ))}
+            </div>
+
+            <div className="tracking-mode-group">
+              <span className="tracking-mode-label">Tracking Mode</span>
+              <div className="tracking-mode-buttons">
+                <button
+                  type="button"
+                  className={`tracking-mode-btn ${trackingMode === 'fluid' ? 'active' : ''}`}
+                  aria-pressed={trackingMode === 'fluid'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTrackingModeChange('fluid');
+                  }}
+                >
+                  Fluid
+                </button>
+                <button
+                  type="button"
+                  className={`tracking-mode-btn ${trackingMode === 'ping' ? 'active' : ''}`}
+                  aria-pressed={trackingMode === 'ping'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTrackingModeChange('ping');
+                  }}
+                >
+                  Ping
+                </button>
+              </div>
+              <div className="tracking-mode-current" role="status" aria-live="polite">
+                Current: <strong>{trackingMode === 'fluid' ? 'Fluid' : 'Ping'}</strong>
+              </div>
+            </div>
+
+            <div className="bus-list-panel">
+              <div className="bus-list-panel__header">
+                <span>Live Bus List</span>
+                <span>{buses.length}</span>
+              </div>
+              {buses.length === 0 ? (
+                <div className="bus-list-empty">No bus data available</div>
+              ) : (
+                buses.map((bus, index) => {
+                  const statusCategory = getStatusCategory(bus.status);
+                  const isShown = overlays.buses && busStatusOptions[statusCategory];
+                  const label = bus.name || bus.id || `Bus ${index + 1}`;
+
+                  return (
+                    <div
+                      key={bus.id || index}
+                      className={`bus-list-row ${isShown ? '' : 'bus-list-row--muted'}`}
+                    >
+                      <span className="bus-list-row__main">
+                        <span className="bus-list-row__name">{label}</span>
+                        <span className="bus-list-row__meta">
+                          {bus.speed ?? 'N/A'} mph · {bus.heading ?? 'N/A'}°
+                        </span>
+                      </span>
+                      <span className={`bus-list-row__status bus-list-row__status--${statusCategory}`}>
+                        {statusCategory === 'active' ? 'Active' : statusCategory === 'idle' ? 'Idle' : 'Stopped'}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'layers' && layers.map(({ key, icon, img, label, expandable }) => {
           const isExpanded = expandable === 'buses'
             ? busesExpanded
             : expandable === 'routes'

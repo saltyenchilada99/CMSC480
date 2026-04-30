@@ -18,6 +18,7 @@ import { Food } from './components/food.tsx';
 import { UserLocationMap } from "./UserTracker";
 import { DEFAULT_BUS_STATUS_OPTIONS } from './components/SubHeader';
 import { MapViewportController } from './components/MapViewportController.tsx';
+import { VisibleLayerGroup } from './components/VisibleLayerGroup.tsx';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -173,6 +174,8 @@ function App() {
       <Header connectionStatus={connectionStatus} buses={buses} onMarkerFocus={handleMarkerFocus} />
       <div id="body">
         <SubHeader
+          buses={buses}
+          connectionStatus={connectionStatus}
           onBusesToggle={setShowBuses}
           onStopsToggle={setShowStops}
           onRoutesToggle={setShowRoutes}
@@ -204,18 +207,32 @@ function App() {
             url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
             ext="jpg"
           />
-          {showUserLocation && <UserLocationMap userPos={userPosition} onMarkerFocus={handleMarkerFocus} />}
+          <VisibleLayerGroup visible={showUserLocation}>
+            <UserLocationMap userPos={userPosition} onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
 
-          {showBuses && <Bus buses={displayBuses} onMarkerFocus={handleMarkerFocus} />}
-          {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} />}
-          {showRecreation && <Recreation onMarkerFocus={handleMarkerFocus} />}
-          {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} />}
-          {showFood && <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} />}
+          <VisibleLayerGroup visible={showBuses}>
+            <Bus buses={displayBuses} onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
+          <VisibleLayerGroup visible={showAcademics}>
+            <Academic onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
+          <VisibleLayerGroup visible={showRecreation}>
+            <Recreation onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
+          <VisibleLayerGroup visible={showDorms}>
+            <Dorm onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
+          <VisibleLayerGroup visible={showFood}>
+            <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
 
           <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
           <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
           <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
-          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} />}
+          <VisibleLayerGroup visible={showStops}>
+            <BusStop onMarkerFocus={handleMarkerFocus} />
+          </VisibleLayerGroup>
         </MapContainer>
       </div>
       <Footer />
