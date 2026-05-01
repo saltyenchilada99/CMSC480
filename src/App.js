@@ -30,6 +30,7 @@ L.Icon.Default.mergeOptions({
 const USER_ZOOM = 16;
 const CAMPUS_CENTER = [41.012, -76.448];
 const CAMPUS_ZOOM = USER_ZOOM;
+const DEFAULT_TRACKING_MODE = 'ping';
 
 function buildBaseFocus(userPosition, showUserLocation) {
   if (showUserLocation && userPosition) {
@@ -75,7 +76,7 @@ function App() {
   ];
   const [showFood, setShowFood] = useState(false);
   const [busStatusVisibility, setBusStatusVisibility] = useState(DEFAULT_BUS_STATUS_OPTIONS);
-  const [trackingMode, setTrackingMode] = useState('fluid');
+  const [trackingMode, setTrackingMode] = useState(DEFAULT_TRACKING_MODE);
   const [foodVisibility, setFoodVisibility] = useState({
     'F-1': true, 'F-2': true, 'F-3': true, 'F-4': true, 'F-5': true, 'F-6': true,
   });

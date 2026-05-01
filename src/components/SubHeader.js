@@ -18,6 +18,8 @@ const DEFAULT_OVERLAYS = {
   food: false,
 };
 
+const DEFAULT_TRACKING_MODE = 'ping';
+
 export const DEFAULT_BUS_STATUS_OPTIONS = {
   active: true,
   idle: true,
@@ -110,20 +112,11 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
   const [busStatusOptions, setBusStatusOptions] = useState(DEFAULT_BUS_STATUS_OPTIONS);
-  const [trackingMode, setTrackingMode] = useState('fluid');
+  const [trackingMode, setTrackingMode] = useState(DEFAULT_TRACKING_MODE);
   const [activeTab, setActiveTab] = useState('layers');
   const [busesExpanded, setBusesExpanded] = useState(false);
-  const [routesExpanded, setRoutesExpanded] = useState(false);
+  const [placesExpanded, setPlacesExpanded] = useState(true);
   const [foodExpanded, setFoodExpanded] = useState(false);
-
-  const syncMainRouteToggle = (nextOptions) => {
-    const anyEnabled = Object.values(nextOptions).some(Boolean);
-    setOverlays((prev) => {
-      if (prev.routes === anyEnabled) return prev;
-      if (onRoutesToggle) onRoutesToggle(anyEnabled);
-      return { ...prev, routes: anyEnabled };
-    });
-  };
 
   const syncMainFoodToggle = (nextOptions) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
@@ -166,7 +159,6 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
       const nextRouteOptions = { campus: next.routes, downtown: next.routes, walmart: next.routes };
       setRouteOptions(nextRouteOptions);
       if (onRouteOptionsToggle) onRouteOptionsToggle(nextRouteOptions);
-      if (!next.routes) setRoutesExpanded(false);
     }
     if (key === 'food') {
       if (onFoodToggle) onFoodToggle(next.food);
@@ -181,7 +173,6 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
     setRouteOptions(next);
     if (onRouteOptionsToggle) onRouteOptionsToggle(next);
-    syncMainRouteToggle(next);
   };
 
   const handleFoodOptionToggle = (foodKey) => {
@@ -203,9 +194,9 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     setRouteOptions(DEFAULT_ROUTE_OPTIONS);
     setFoodOptions(DEFAULT_FOOD_OPTIONS);
     setBusStatusOptions(DEFAULT_BUS_STATUS_OPTIONS);
-    setTrackingMode('fluid');
+    setTrackingMode(DEFAULT_TRACKING_MODE);
     setBusesExpanded(false);
-    setRoutesExpanded(false);
+    setPlacesExpanded(true);
     setFoodExpanded(false);
     if (onBusesToggle) onBusesToggle(DEFAULT_OVERLAYS.buses);
     if (onStopsToggle) onStopsToggle(DEFAULT_OVERLAYS.stops);
@@ -218,7 +209,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     if (onFoodToggle) onFoodToggle(DEFAULT_OVERLAYS.food);
     if (onFoodOptionsToggle) onFoodOptionsToggle(DEFAULT_FOOD_OPTIONS);
     if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(DEFAULT_BUS_STATUS_OPTIONS);
-    if (onTrackingModeChange) onTrackingModeChange('fluid');
+    if (onTrackingModeChange) onTrackingModeChange(DEFAULT_TRACKING_MODE);
   };
 
   const handleTrackingModeChange = (mode) => {
@@ -236,20 +227,24 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
   const visibleBusCount = buses.filter((bus) => busStatusOptions[getStatusCategory(bus.status)]).length;
 
   const layers = [
-    { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
-    { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
+    { key: 'stops', img: busStopIcon, label: 'Bus Stops' },
+    { key: 'routes', icon: 'R', label: 'Routes' },
+    { key: 'places', icon: 'P', label: 'Campus Places', expandable: 'places' },
+    { key: 'user', label: 'My Location' },
+  ];
+
+  const placeLayers = [
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
     { key: 'recreation', img: recreationIcon, label: 'Recreation + Athletics' },
-    { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
-    { key: 'food',      img: foodIcon,     label: 'Dining' },
-    { key: 'user',      label: 'My Location' },
+    { key: 'dorms', img: dormIcon, label: 'Dorms' },
+    { key: 'food', img: foodIcon, label: 'Dining' },
   ];
 
   return (
     <div className="map-layer-panel">
       <div className="map-layer-panel-header">
         <span>Map Layers</span>
-        <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
+        <span className="map-layer-panel-header__mark">+</span>
       </div>
       <div className="map-layer-tabs" role="tablist" aria-label="Map panel views">
         <button
@@ -371,15 +366,15 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
         {activeTab === 'layers' && layers.map(({ key, icon, img, label, expandable }) => {
           const isExpanded = expandable === 'buses'
             ? busesExpanded
-            : expandable === 'routes'
-              ? routesExpanded
+            : expandable === 'places'
+              ? placesExpanded
               : expandable === 'food'
                 ? foodExpanded
                 : false;
           const setExpanded = expandable === 'buses'
             ? setBusesExpanded
-            : expandable === 'routes'
-              ? setRoutesExpanded
+            : expandable === 'places'
+              ? setPlacesExpanded
               : setFoodExpanded;
           const isUserLayer = key === 'user';
 
@@ -416,8 +411,12 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
               <div
                 className="layer-item"
                 onClick={() => {
+                  if (expandable === 'places') {
+                    setExpanded(p => !p);
+                    return;
+                  }
+
                   handleToggle(key);
-                  if (expandable && !overlays[key]) setExpanded(false);
                 }}
               >
                 <div className="layer-item-left">
@@ -427,20 +426,24 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                   }
                   <span className="layer-item-label">{label}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {expandable && overlays[key] && (
-                    <span
-                      style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
+                <div className="layer-item-actions">
+                  {expandable === 'places' && (
+                    <button
+                      type="button"
+                      className="layer-expand-btn"
+                      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${label} options`}
                       onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }}
                     >
-                      {isExpanded ? '▾' : '▸'}
-                    </span>
+                      {isExpanded ? 'v' : '>'}
+                    </button>
                   )}
-                  <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
+                  {key !== 'places' && (
+                    <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
+                  )}
                 </div>
               </div>
 
-              {expandable === 'routes' && isExpanded && overlays[key] && (
+              {key === 'routes' && (
                 <div className="route-suboptions">
                   {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
                     <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
@@ -451,6 +454,18 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                         checked={routeOptions[routeKey]}
                         onChange={() => handleRouteOptionToggle(routeKey)}
                       />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {expandable === 'places' && isExpanded && (
+                <div className="route-suboptions place-suboptions">
+                  {placeLayers.map((placeLayer) => (
+                    <label key={placeLayer.key} className="route-suboption place-suboption" onClick={(e) => e.stopPropagation()}>
+                      <img src={placeLayer.img} alt="" className="place-suboption-icon" />
+                      <span className="route-suboption-label">{placeLayer.label}</span>
+                      <Toggle checked={overlays[placeLayer.key]} onChange={() => handleToggle(placeLayer.key)} />
                     </label>
                   ))}
                 </div>
