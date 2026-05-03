@@ -133,18 +133,18 @@ function App() {
   }, []);
 
   function ZoomListener({ setZoom }) {
-  useMapEvents({
-    zoomend: (e) => {
-      const map = e.target;
-      const z = map.getZoom();
+    useMapEvents({
+      zoomend: (e) => {
+        const map = e.target;
+        const z = map.getZoom();
 
-      console.log("zoom fired:", z);
-      setZoom(z);
-    },
-  });
+        console.log("zoom fired:", z);
+        setZoom(z);
+      },
+    });
 
-  return null;
-}
+    return null;
+  }
   useEffect(() => {
     if (showUserLocation && userPosition && (!hasAutoCenteredOnUser.current || centerOnUserWhenAvailable.current)) {
       hasAutoCenteredOnUser.current = true;
@@ -186,16 +186,6 @@ function App() {
   //Allows the app to pick up when the map has been zoomed in or out
   const [zoom, setZoom] = useState(16);
 
-  //Compares current zoom level to minimum zoom requirements for each marker
-  const getMinZoom = (type) => {
-  switch (type) {
-    case "busStop": return 14;
-    case "dorm": return 15;
-    case "building": return 13;
-    default: return 14;
-  }
-};
-
   return (
     <div className="app-container">
       <Header connectionStatus={connectionStatus} buses={buses} onMarkerFocus={handleMarkerFocus} />
@@ -224,7 +214,7 @@ function App() {
           maxBoundsViscosity={1.0}
           whenCreated={(map) => {
             mapRef.current = map;
-          }} 
+          }}
         >
           <ZoomListener setZoom={setZoom} />
 
@@ -240,15 +230,15 @@ function App() {
           {showUserLocation && <UserLocationMap userPos={userPosition} onMarkerFocus={handleMarkerFocus} />}
 
           {showBuses && <Bus buses={displayBuses} onMarkerFocus={handleMarkerFocus} />}
-          {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
+          {showAcademics && <Academic onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
           {showRecreation && <Recreation onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
-          {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
-          {showFood && <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
+          {showDorms && <Dorm onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
+          {showFood && <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
 
           <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
           <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
           <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
-          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} zoom={zoom}/>}
+          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
         </MapContainer>
       </div>
       <Footer />

@@ -114,6 +114,7 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
   const [busesExpanded, setBusesExpanded] = useState(false);
   const [routesExpanded, setRoutesExpanded] = useState(false);
   const [foodExpanded, setFoodExpanded] = useState(false);
+  const [menuExpanded, setMenuExpanded] = useState(true);
 
   const syncMainRouteToggle = (nextOptions) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
@@ -226,192 +227,200 @@ export function SubHeader({ onBusesToggle, onStopsToggle, onRoutesToggle, onRout
   };
 
   const layers = [
-    { key: 'buses',     img: busIcon,      label: 'Buses', expandable: 'buses' },
-    { key: 'stops',     img: busStopIcon,  label: 'Bus Stops' },
-    { key: 'routes',    icon: '🛣️',        label: 'Routes',  expandable: 'routes' },
+    { key: 'buses', img: busIcon, label: 'Buses', expandable: 'buses' },
+    { key: 'stops', img: busStopIcon, label: 'Bus Stops' },
+    { key: 'routes', icon: '🛣️', label: 'Routes', expandable: 'routes' },
     { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
     { key: 'recreation', img: recreationIcon, label: 'Recreation + Athletics' },
-    { key: 'dorms',     img: dormIcon,     label: 'Dorms' },
-    { key: 'food',      img: foodIcon,     label: 'Dining' },
-    { key: 'user',      label: 'My Location' },
+    { key: 'dorms', img: dormIcon, label: 'Dorms' },
+    { key: 'food', img: foodIcon, label: 'Dining' },
+    { key: 'user', label: 'My Location' },
   ];
 
   return (
-    <div className="map-layer-panel">
-      <div className="map-layer-panel-header">
-        <span>Map Layers</span>
-        <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
-      </div>
-      <div className="map-layer-panel-body">
-        {layers.map(({ key, icon, img, label, expandable }) => {
-          const isExpanded = expandable === 'buses'
-            ? busesExpanded
-            : expandable === 'routes'
-              ? routesExpanded
-              : expandable === 'food'
-                ? foodExpanded
-                : false;
-          const setExpanded = expandable === 'buses'
-            ? setBusesExpanded
-            : expandable === 'routes'
-              ? setRoutesExpanded
-              : setFoodExpanded;
-          const isUserLayer = key === 'user';
+    <div className={`map-layer-wrapper ${menuExpanded ? "open" : "closed"}`}>
+      <div className="map-layer-panel">
+        <div className="map-layer-panel-header">
+          <span>Map Layers</span>
+          <span style={{ fontSize: '1rem', opacity: 0.5 }}>⊞</span>
+        </div>
+        <div className="map-layer-panel-body">
+          {layers.map(({ key, icon, img, label, expandable }) => {
+            const isExpanded = expandable === 'buses'
+              ? busesExpanded
+              : expandable === 'routes'
+                ? routesExpanded
+                : expandable === 'food'
+                  ? foodExpanded
+                  : false;
+            const setExpanded = expandable === 'buses'
+              ? setBusesExpanded
+              : expandable === 'routes'
+                ? setRoutesExpanded
+                : setFoodExpanded;
+            const isUserLayer = key === 'user';
 
-          if (isUserLayer) {
+            if (isUserLayer) {
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`location-toggle-card ${overlays.user ? 'location-toggle-card--active' : ''}`}
+                  aria-pressed={overlays.user}
+                  aria-label={`${overlays.user ? 'Disable' : 'Enable'} my location`}
+                  onClick={() => handleToggle('user')}
+                >
+                  <span className="location-toggle-card__content">
+                    <span className="location-toggle-card__icon-shell">
+                      <LocationButtonIcon />
+                    </span>
+                    <span className="location-toggle-card__copy">
+                      <span className="location-toggle-card__title">{label}</span>
+                      <span className="location-toggle-card__subtitle">
+                        {overlays.user ? 'Showing your live position' : 'Hidden from the map'}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="location-toggle-card__badge">
+                    {overlays.user ? 'On' : 'Off'}
+                  </span>
+                </button>
+              );
+            }
+
             return (
-              <button
-                key={key}
-                type="button"
-                className={`location-toggle-card ${overlays.user ? 'location-toggle-card--active' : ''}`}
-                aria-pressed={overlays.user}
-                aria-label={`${overlays.user ? 'Disable' : 'Enable'} my location`}
-                onClick={() => handleToggle('user')}
-              >
-                <span className="location-toggle-card__content">
-                  <span className="location-toggle-card__icon-shell">
-                    <LocationButtonIcon />
-                  </span>
-                  <span className="location-toggle-card__copy">
-                    <span className="location-toggle-card__title">{label}</span>
-                    <span className="location-toggle-card__subtitle">
-                      {overlays.user ? 'Showing your live position' : 'Hidden from the map'}
-                    </span>
-                  </span>
-                </span>
-                <span className="location-toggle-card__badge">
-                  {overlays.user ? 'On' : 'Off'}
-                </span>
-              </button>
-            );
-          }
-
-          return (
-            <React.Fragment key={key}>
-              <div
-                className="layer-item"
-                onClick={() => {
-                  handleToggle(key);
-                  if (expandable && !overlays[key]) setExpanded(false);
-                }}
-              >
-                <div className="layer-item-left">
-                  {img
-                    ? <img src={img} alt={label} className="layer-item-icon-img" />
-                    : <span className="layer-item-icon">{icon}</span>
-                  }
-                  <span className="layer-item-label">{label}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {expandable && overlays[key] && (
-                    <span
-                      style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
-                      onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }}
-                    >
-                      {isExpanded ? '▾' : '▸'}
-                    </span>
-                  )}
-                  <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
-                </div>
-              </div>
-
-              {expandable === 'routes' && isExpanded && overlays[key] && (
-                <div className="route-suboptions">
-                  {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
-                    <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
-                      <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
-                      <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
-                      <input
-                        type="checkbox"
-                        checked={routeOptions[routeKey]}
-                        onChange={() => handleRouteOptionToggle(routeKey)}
-                      />
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {expandable === 'buses' && isExpanded && overlays[key] && (
-                <div className="route-suboptions">
-                  {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
-                    <label key={statusKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
-                      <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
-                      <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
-                      <input
-                        type="checkbox"
-                        checked={busStatusOptions[statusKey]}
-                        onChange={() => handleBusStatusOptionToggle(statusKey)}
-                      />
-                    </label>
-                  ))}
-
-                  <div className="tracking-mode-group">
-                    <span className="tracking-mode-label">Tracking Mode</span>
-                    <div className="tracking-mode-buttons">
-                      <button
-                        type="button"
-                        className={`tracking-mode-btn ${trackingMode === 'fluid' ? 'active' : ''}`}
-                        aria-pressed={trackingMode === 'fluid'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTrackingModeChange('fluid');
-                        }}
+              <React.Fragment key={key}>
+                <div
+                  className="layer-item"
+                  onClick={() => {
+                    handleToggle(key);
+                    if (expandable && !overlays[key]) setExpanded(false);
+                  }}
+                >
+                  <div className="layer-item-left">
+                    {img
+                      ? <img src={img} alt={label} className="layer-item-icon-img" />
+                      : <span className="layer-item-icon">{icon}</span>
+                    }
+                    <span className="layer-item-label">{label}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {expandable && overlays[key] && (
+                      <span
+                        style={{ fontSize: '0.7rem', color: '#6e1020', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
+                        onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }}
                       >
-                        Fluid
-                      </button>
-                      <button
-                        type="button"
-                        className={`tracking-mode-btn ${trackingMode === 'ping' ? 'active' : ''}`}
-                        aria-pressed={trackingMode === 'ping'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTrackingModeChange('ping');
-                        }}
-                      >
-                        Ping
-                      </button>
-                    </div>
-                    <div className="tracking-mode-current" role="status" aria-live="polite">
-                      Current: <strong>{trackingMode === 'fluid' ? 'Fluid' : 'Ping'}</strong>
-                    </div>
+                        {isExpanded ? '▾' : '▸'}
+                      </span>
+                    )}
+                    <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
                   </div>
                 </div>
-              )}
 
-              {expandable === 'food' && isExpanded && overlays[key] && (
-                <div className="route-suboptions">
-                  {Object.keys(DEFAULT_FOOD_OPTIONS).map((foodKey) => (
-                    <label key={foodKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
-                      <span className="route-dot" style={{ background: FOOD_DOT_COLOR }} />
-                      <span className="route-suboption-label">{FOOD_LABELS[foodKey]}</span>
-                      <input
-                        type="checkbox"
-                        checked={foodOptions[foodKey]}
-                        onChange={() => handleFoodOptionToggle(foodKey)}
-                      />
-                    </label>
-                  ))}
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
+                {expandable === 'routes' && isExpanded && overlays[key] && (
+                  <div className="route-suboptions">
+                    {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
+                      <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                        <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
+                        <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
+                        <input
+                          type="checkbox"
+                          checked={routeOptions[routeKey]}
+                          onChange={() => handleRouteOptionToggle(routeKey)}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
 
-        <div className="panel-divider" />
-        <button
-          type="button"
-          className="panel-secondary-btn"
-          onClick={onCenterMap}
-        >
-          <span className="panel-secondary-btn-icon">
-            <CenterMapIcon />
-          </span>
-          <span>Center Map</span>
-        </button>
-        <button className="panel-reset-btn" onClick={handleReset}>
-          Reset Defaults
-        </button>
+                {expandable === 'buses' && isExpanded && overlays[key] && (
+                  <div className="route-suboptions">
+                    {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
+                      <label key={statusKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                        <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
+                        <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
+                        <input
+                          type="checkbox"
+                          checked={busStatusOptions[statusKey]}
+                          onChange={() => handleBusStatusOptionToggle(statusKey)}
+                        />
+                      </label>
+                    ))}
+
+                    <div className="tracking-mode-group">
+                      <span className="tracking-mode-label">Tracking Mode</span>
+                      <div className="tracking-mode-buttons">
+                        <button
+                          type="button"
+                          className={`tracking-mode-btn ${trackingMode === 'fluid' ? 'active' : ''}`}
+                          aria-pressed={trackingMode === 'fluid'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTrackingModeChange('fluid');
+                          }}
+                        >
+                          Fluid
+                        </button>
+                        <button
+                          type="button"
+                          className={`tracking-mode-btn ${trackingMode === 'ping' ? 'active' : ''}`}
+                          aria-pressed={trackingMode === 'ping'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTrackingModeChange('ping');
+                          }}
+                        >
+                          Ping
+                        </button>
+                      </div>
+                      <div className="tracking-mode-current" role="status" aria-live="polite">
+                        Current: <strong>{trackingMode === 'fluid' ? 'Fluid' : 'Ping'}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {expandable === 'food' && isExpanded && overlays[key] && (
+                  <div className="route-suboptions">
+                    {Object.keys(DEFAULT_FOOD_OPTIONS).map((foodKey) => (
+                      <label key={foodKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                        <span className="route-dot" style={{ background: FOOD_DOT_COLOR }} />
+                        <span className="route-suboption-label">{FOOD_LABELS[foodKey]}</span>
+                        <input
+                          type="checkbox"
+                          checked={foodOptions[foodKey]}
+                          onChange={() => handleFoodOptionToggle(foodKey)}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+
+          <div className="panel-divider" />
+          <button
+            type="button"
+            className="panel-secondary-btn"
+            onClick={onCenterMap}
+          >
+            <span className="panel-secondary-btn-icon">
+              <CenterMapIcon />
+            </span>
+            <span>Center Map</span>
+          </button>
+          <button className="panel-reset-btn" onClick={handleReset}>
+            Reset Defaults
+          </button>
+        </div>
       </div>
-    </div>
+      <button
+        className="map-layer-toggle"
+        onClick={() => setMenuExpanded(prev => !prev)}
+      >
+        {!menuExpanded ? "<" : ">"}
+      </button>
+    </div >
   );
 }

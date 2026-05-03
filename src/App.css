@@ -50,10 +50,11 @@ html, body, #root {
 /* Floating layer panel inside the map */
 .map-layer-panel {
   position: absolute;
-  top: 135px;
+  top: 15px;
   right: 16px;
   z-index: 1100;
-  width: 230px;
+  width: min(230px, 80vw);
+  min-width: 230px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -867,3 +868,38 @@ html, body, #root {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+ .map-layer-wrapper {
+  position: absolute;
+  z-index: 2000;
+  transition: right 0.3s ease;
+} 
+
+.map-layer-toggle {
+  position: absolute;
+  top: 25px;
+  left: -15px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #6e1020;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+
+/* CLOSED */
+.map-layer-wrapper.closed {
+  width: 260px;
+  right: -245px;
+}
+
+/* OPEN */
+.map-layer-wrapper.open {
+  width: 260px;
+  right: -15px;
+}
+
