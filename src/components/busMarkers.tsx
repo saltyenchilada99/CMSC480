@@ -54,7 +54,7 @@ function buildIcon(
 ) {
     const iconAnchorY = anchorY - crop.top;
     const popupOffsetY = -iconAnchorY + POPUP_BORDER_OFFSET;
-    const adjustedAnchorY = busVertical ? crop.height : crop.height * 0.75;
+    const adjustedAnchorY = busVertical ? iconAnchorY : crop.height * 0.75;
 
     return L.divIcon({
         className: '',
