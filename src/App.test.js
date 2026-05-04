@@ -15,6 +15,7 @@ jest.mock('react-leaflet', () => {
   return {
     MapContainer: ({ children }) => React.createElement('div', { 'data-testid': 'map-container' }, children),
     TileLayer: () => null,
+    useMapEvents: jest.fn(),
   };
 });
 
@@ -32,6 +33,7 @@ jest.mock('./components/bus.tsx', () => {
 
 jest.mock('./components/busStop.tsx', () => ({
   BusStop: () => null,
+  busStopLibrary: [],
 }));
 
 jest.mock('./components/routes/campusLoopRoute.tsx', () => ({
@@ -48,18 +50,22 @@ jest.mock('./components/routes/walmartTripRoute.tsx', () => ({
 
 jest.mock('./components/Academic.tsx', () => ({
   Academic: () => null,
+  academicBuildings: [],
 }));
 
 jest.mock('./components/Recreation.tsx', () => ({
   Recreation: () => null,
+  recreationLocations: [],
 }));
 
 jest.mock('./components/dorm.tsx', () => ({
   Dorm: () => null,
+  dormLocations: [],
 }));
 
 jest.mock('./components/food.tsx', () => ({
   Food: () => null,
+  foodLocations: [],
 }));
 
 jest.mock('./UserTracker', () => ({

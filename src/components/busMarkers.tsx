@@ -14,10 +14,8 @@ import '../App.css';
 
 const MARKER_WIDTH = 108;
 const MARKER_HEIGHT = 81;
-const MARKER_CENTER_X = Math.round(MARKER_WIDTH / 2);
 const DEFAULT_ANCHOR_Y = 63;
 const BUS_ANCHOR_Y = 61;
-const POPUP_BORDER_OFFSET = 10;
 
 type MarkerCrop = {
     left: number;
@@ -42,7 +40,6 @@ const BUS_VERTICAL: MarkerCrop = withHitPadding({ left: 28, top: 6, width: 90, h
 const BUS_HORIZONTAL: MarkerCrop = withHitPadding({ left: 28, top: 6, width: 135, height: 135 });
 const DORM_CROP: MarkerCrop = withHitPadding({ left: 30, top: 5, width: 32, height: 48 });
 const BUS_STOP_CROP: MarkerCrop = withHitPadding({ left: 31, top: 4, width: 146, height: 170 });
-const BUS_CROP: MarkerCrop = withHitPadding({ left: 26, top: 5, width: 58, height: 67 });
 const FOOD_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54, height: 60 });
 const RECREATION_CROP: MarkerCrop = withHitPadding({ left: 27, top: 9, width: 54, height: 60 });
 
@@ -53,7 +50,6 @@ function buildIcon(
     busVertical = false
 ) {
     const iconAnchorY = anchorY - crop.top;
-    const popupOffsetY = -iconAnchorY + POPUP_BORDER_OFFSET;
     const adjustedAnchorY = busVertical ? iconAnchorY : crop.height * 0.75;
 
     return L.divIcon({
@@ -64,6 +60,7 @@ function buildIcon(
       <img
         class="marker-pin-icon-img"
         src="${iconUrl}"
+        alt=""
         draggable="false"
         style="width:100%;height:100%;object-fit:contain;">
     </div>
@@ -118,7 +115,6 @@ export function GetRecreationIcon() {
     return RECREATION_ICON;
 }
 
-export function GetUserIcon(icon: string) {
+export function GetUserIcon() {
     return USER_ICON;
 }
-

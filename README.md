@@ -1,70 +1,333 @@
-# Getting Started with Create React App
+# Bloomsburg Campus Bus Tracker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Bloomsburg Campus Bus Tracker is a React and Leaflet web application for viewing Bloomsburg campus transportation in real time. The app combines live Verizon Connect vehicle data, route overlays, campus points of interest, user geolocation, and an interactive layer menu into one map-first experience for students, visitors, and campus operations.
+
+The current app focuses on three transportation routes: Campus Loop, Downtown Loop, and Walmart Trip. It also includes searchable markers for bus stops, academic buildings, residence halls, recreation and athletics locations, and dining venues.
+
+## Table of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Available Scripts](#available-scripts)
+- [API Reference](#api-reference)
+- [Project Structure](#project-structure)
+- [Project Review Notes](#project-review-notes)
+- [Contribution Analysis](#contribution-analysis)
+- [Troubleshooting](#troubleshooting)
+
+## Features
+
+- Live bus markers delivered over WebSocket from the local backend.
+- Fluid tracking mode that smooths raw GPS updates between provider pings.
+- Ping tracking mode for viewing raw live GPS positions.
+- Direction-aware bus icons that rotate by heading category.
+- Campus Loop, Downtown Loop, and Walmart Trip route overlays.
+- Bus stop popups with stop descriptions, route chips, locations, and images.
+- Search across bus stops, dorms, academic buildings, recreation locations, and dining.
+- Layer controls for buses, bus statuses, stops, routes, user location, academics, recreation, dorms, and dining.
+- Per-route and per-dining-location subfilters.
+- Browser geolocation marker with a center-map workflow.
+- Bus schedule modal with route service details.
+- Map viewport logic that recenters markers and popups without losing the campus bounds.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  A["Verizon Connect API"] --> B["Express server"]
+  C["GPS webhook"] --> B
+  B --> D["FluidTrackingEngine"]
+  D --> E["REST API /api/buses"]
+  D --> F["WebSocket location_update"]
+  F --> G["React BusProvider"]
+  G --> H["Leaflet map markers"]
+  I["OSRM route service"] --> J["Route polyline components"]
+  K["Browser geolocation"] --> H
+```
+
+### Frontend
+
+The frontend lives in `src/` and is built with Create React App. `src/App.js` owns the main map state: overlay visibility, route visibility, bus status filters, tracking mode, zoom, user location, and focus targets. `react-leaflet` renders the map, markers, popups, and route polylines.
+
+Important frontend modules:
+
+- `src/components/bus.tsx` - opens the WebSocket connection through `BusProvider` and renders live bus markers.
+- `src/components/Header.js` - renders the title, bus schedule modal, live status badge, and search.
+- `src/components/SubHeader.js` - renders the map layer panel, route filters, food filters, bus status filters, tracking mode selector, reset button, and center-map button.
+- `src/components/MapViewportController.tsx` - handles map panning, focus targets, popup centering, and reset behavior.
+- `src/components/busStop.tsx` - stores and renders the bus stop marker library.
+- `src/components/Academic.tsx`, `dorm.tsx`, `Recreation.tsx`, and `food.tsx` - store and render campus point-of-interest layers.
+- `src/components/routes/*.tsx` - fetch OSRM routes, decode polylines, and render the three route overlays.
+
+### Backend
+
+The backend lives in `server/` and is a TypeScript Express service. It polls Verizon Connect by default, can accept GPS webhook posts, normalizes vehicle data, smooths bus movement, and broadcasts updates to the React app.
+
+Important backend modules:
+
+- `server/src/server.ts` - Express app, REST endpoints, WebSocket server, polling startup, webhook route, health checks, and broadcast loop.
+- `server/src/VZConnectAPICalls.ts` - Verizon Connect token handling, vehicle lookup, location lookup, polling, and webhook parsing.
+- `server/src/FluidTracking.ts` - interpolation engine that smooths locations, handles stale timestamps, snaps to known route geometry, and avoids unrealistic jumps.
+- `server/src/BusRoute.ts` - route projection, distance calculation, and route progress utilities.
+
+## Tech Stack
+
+- React 19
+- Create React App / react-scripts
+- React Leaflet and Leaflet
+- TypeScript for server code and several map components
+- Express
+- WebSocket / ws
+- Verizon Connect / Fleetmatics Reveal API
+- OSRM public routing service for client-side route geometry
+- Stadia Maps / OpenStreetMap tile attribution in the Leaflet tile layer
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or newer
+- npm
+- Verizon Connect API credentials for live vehicle data
+- Network access for map tiles and OSRM route polyline requests
+
+### Install Dependencies
+
+Install the React app dependencies from the project root:
+
+```bash
+npm install
+```
+
+Install the backend dependencies:
+
+```bash
+npm --prefix server install
+```
+
+### Configure the Backend
+
+Create `server/.env` with local Verizon Connect credentials and server settings:
+
+```bash
+VZC_USERNAME=your_verizon_connect_username
+VZC_PASSWORD=your_verizon_connect_password
+VZC_APP_ID=your_verizon_connect_app_id
+
+PORT=3001
+USE_POLLING=true
+POLL_INTERVAL_MS=30000
+```
+
+`server/.env` is ignored by git. Keep real credentials out of commits.
+
+### Run the Full App
+
+From the project root:
+
+```bash
+npm run dev
+```
+
+This starts both pieces together:
+
+- React client: `http://localhost:3000`
+- Backend API and WebSocket server: `http://localhost:3001`
+
+The React app proxies `/api` requests to port `3001`, and `BusProvider` connects directly to `ws://localhost:3001`.
+
+### Run Client and Server Separately
+
+Terminal 1:
+
+```bash
+npm --prefix server run dev
+```
+
+Terminal 2:
+
+```bash
+npm start
+```
+
+The static map layers can render without live bus data, but the status badge will remain reconnecting until the backend WebSocket is available.
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VZC_USERNAME` | `YOUR_USERNAME` fallback in code | Verizon Connect API username. |
+| `VZC_PASSWORD` | `YOUR_PASSWORD` fallback in code | Verizon Connect API password. |
+| `VZC_APP_ID` | `YOUR_APP_ID` fallback in code | Verizon Connect Atmosphere app id. |
+| `PORT` | `3000` in server code | Backend HTTP/WebSocket port. Use `3001` for this app because the React client expects it. |
+| `USE_POLLING` | `true` | Enables polling Verizon Connect. Set to `false` for webhook-only mode. |
+| `POLL_INTERVAL_MS` | `30000` | Polling interval for vehicle locations. |
+| `FLUID_INTERPOLATION_WINDOW_MS` | Same as poll interval when polling | Delay window used for smoothed playback. |
+| `FLUID_BROADCAST_INTERVAL_MS` | `250` | WebSocket broadcast cadence for smoothed locations. |
+| `ROUTE_CAPTURE_DISTANCE_METERS` | `225` | Distance threshold for snapping a bus to a route. |
+| `ROUTE_RELEASE_DISTANCE_METERS` | `325` | Distance threshold for keeping a bus on a previously matched route. |
+| `ADAPTIVE_DELAY_BUFFER_MS` | `2000` | Buffer used by the fluid tracking delay calculation. |
 
 ## Available Scripts
 
-In the project directory, you can run:
+### Root Project
 
-### `npm start`
+```bash
+npm run dev
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Runs the backend and React client together.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+npm start
+```
 
-### `npm test`
+Runs only the React development server on `http://localhost:3000`.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+npm test -- --watchAll=false
+```
 
-### `npm run build`
+Runs the React test suite once.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm run build
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Builds the React app into `build/`.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Backend
 
-### `npm run eject`
+```bash
+npm --prefix server run dev
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Runs the TypeScript backend with `ts-node`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm --prefix server run build
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Compiles the backend TypeScript into `server/dist/`.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm --prefix server start
+```
 
-## Learn More
+Runs the compiled backend from `server/dist/server.js`.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm --prefix server run test-api
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Runs the Verizon Connect API test utility in `server/src/test-api.ts`.
 
-### Code Splitting
+## API Reference
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### `GET /api/health`
 
-### Analyzing the Bundle Size
+Returns server health, mode, smoothing configuration, route count, connected WebSocket clients, and bus counts.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### `GET /api/buses`
 
-### Making a Progressive Web App
+Returns the latest display locations after smoothing. Each bus object includes id, name, display coordinates, raw ping coordinates, heading, speed, status, timestamps, route metadata, address, and driver when available.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### `POST /webhooks/gps`
 
-### Advanced Configuration
+Accepts one GPS plot or an array of GPS plots from Verizon Connect webhook delivery. The server normalizes the payload and feeds it into the same location update path used by polling.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### `ws://localhost:3001`
 
-### Deployment
+Broadcasts `location_update` messages to connected clients. The React app listens for these messages in `BusProvider`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Project Structure
 
-### `npm run build` fails to minify
+```text
+.
+|-- public/
+|   |-- busStopImages/        # Stop photos used in bus stop popups
+|   `-- index.html
+|-- resources/                # Presentation/data-flow assets and shared icons
+|-- server/
+|   |-- src/
+|   |   |-- BusRoute.ts
+|   |   |-- FluidTracking.ts
+|   |   |-- VZConnectAPICalls.ts
+|   |   |-- server.ts
+|   |   `-- test-api.ts
+|   |-- package.json
+|   `-- tsconfig.json
+|-- src/
+|   |-- components/
+|   |   |-- routes/
+|   |   |-- Academic.tsx
+|   |   |-- Header.js
+|   |   |-- SubHeader.js
+|   |   |-- bus.tsx
+|   |   |-- busStop.tsx
+|   |   |-- dorm.tsx
+|   |   |-- food.tsx
+|   |   `-- Recreation.tsx
+|   |-- styles/
+|   |-- App.js
+|   |-- UserTracker.js
+|   |-- setupProxy.js
+|   `-- index.js
+|-- package.json
+`-- README.md
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Project Review Notes
+
+### What Works Well
+
+- The app has a clear map-first experience and a useful campus transportation focus.
+- The backend separates provider access, smoothing logic, route math, and server concerns into dedicated modules.
+- The frontend has grown beyond a basic tracker into a broader campus navigation tool with several meaningful point-of-interest layers.
+- The fluid tracking work addresses a real user-facing problem: provider pings are too sparse and jumpy to feel live on a map.
+- Search, toggles, route filters, and tracking modes give users practical control without needing to understand the backend.
+
+### Maintenance Notes
+
+- The active frontend mixes `.js` and `.tsx` files. That works in the current build, but future refactors should either formalize TypeScript for the frontend or keep new UI work consistently JavaScript.
+- `src/bus.js` and `src/busStop.js` are legacy files from earlier iterations. The active app uses `src/components/bus.tsx` and `src/components/busStop.tsx`.
+- Route polylines are fetched from the public OSRM service in the browser. If OSRM is unavailable, the rest of the map can still render but route lines may not appear.
+- The backend route-lock smoothing currently guarantees Campus Loop support. Downtown Loop and Walmart Trip render on the client, but backend route-lock definitions should be expanded if live buses need smoothing on those routes too.
+- The app depends on a local backend running on port `3001`. If `PORT` is omitted, the server code defaults to `3000`, which conflicts with the React dev server and breaks the client WebSocket expectation.
+
+## Contribution Analysis
+
+This summary is based on the git commit history through May 3, 2026. Non-merge commits were reviewed, and aliases are grouped where author metadata and commit patterns indicate the same contributor.
+
+| Contributor | Commit-history signal | Significant contributions |
+| --- | --- | --- |
+| Matthew Weber / `saltyenchilada99` | Largest combined commit set across app setup, map UI, icons, filters, and final cleanup. | Bootstrapped the React/Leaflet app, activated the map, adjusted map sizing and skin, created early bus stop and toggle behavior, added custom bus and stop icons, modularized the bus marker component, added dorm and academic toggles/icons, built search across marker categories, implemented bus status visibility states, added collapsible layer menu behavior, refined directional bus icons and anchors, and fixed popup close styling. |
+| Ethan Wight / `EthanWight` | Major backend integration and several large frontend feature commits. | Added the Verizon Connect backend foundation, proxy setup, and server package; added concurrent client/server development scripts; fixed backend compilation/startup issues; improved route colors and route labels; redesigned the map UI into a full-screen map with side-layer controls; added dining, academic, dorm, and recreation layers; improved user-location controls and map centering; created reusable popup/card and viewport behavior; expanded recreation data and coordinates. |
+| Joey Boehme / `JoeyBoehme` / `BotLiquor` | Route, user tracking, visual asset, and resource commits. | Added initial user location tracking, introduced early bus route display, created the three visible route components, added bus stop images and descriptive stop content, adjusted CommonwealthU-style formatting, contributed user tracker assets and the data flow presentation resource, and made broad integration updates around route, marker, and UI behavior. |
+| Jack Norfolk / `jsnorfolk` | Core live-tracking and smoothing work. | Added early bus and bus stop classes, built `BusRoute` and `FluidTracking` server modules, added moving/fluid bus movement, connected smoothing to the route system, reduced jumpy movement, added route selection/reset UI, introduced the user-facing fluid vs ping tracking mode, optimized the smoothing cadence, and fixed teleportation at route endpoints. |
+| Micah Root / `micah3root` | UI shell, marker fixes, route fixes, and optimization commits. | Built the early header, footer, and subheader UI; added subheader button functionality; fixed merge and marker bugs; refined marker icon handling; added marker click radius and bus timer work; uploaded shared icon resources; optimized several map components; and fixed Campus Loop route behavior near the end of Sprint 5. |
+
+## Troubleshooting
+
+### The status badge says `Reconnecting...`
+
+Make sure the backend is running on port `3001` and that `server/.env` includes `PORT=3001`. Also confirm the WebSocket URL in `src/components/bus.tsx` still points to `ws://localhost:3001`.
+
+### The map loads but no live buses appear
+
+Check `/api/health` and `/api/buses` on the backend. If the server is running but bus count is zero, verify Verizon Connect credentials, vehicle access, and polling logs.
+
+### Route lines do not appear
+
+The route components fetch geometry from the public OSRM service. Check browser network errors and confirm the machine has internet access.
+
+### My Location does not appear
+
+Browser geolocation requires permission and usually works best on `localhost` or HTTPS. If permission is denied, the user marker layer will stay empty.
+
+### Backend build fails
+
+Run `npm --prefix server install`, then `npm --prefix server run build`. The backend is TypeScript with strict mode enabled, so type errors will stop the build.

@@ -250,7 +250,8 @@ async function startServer() {
         fluidTracking = new FluidTrackingEngine(routes, {
             delayMs: INTERPOLATION_WINDOW_MS,
             routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
-            routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS
+            routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
+            adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS
         });
         console.log(`[Routes] Loaded ${routes.length} routes for route-lock smoothing`);
 
