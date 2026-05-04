@@ -7,7 +7,6 @@ The current app focuses on three transportation routes: Campus Loop, Downtown Lo
 ## Table of Contents
 
 - [Features](#features)
-- [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
@@ -32,21 +31,6 @@ The current app focuses on three transportation routes: Campus Loop, Downtown Lo
 - Browser geolocation marker with a center-map workflow.
 - Bus schedule modal with route service details.
 - Map viewport logic that recenters markers and popups without losing the campus bounds.
-
-## Architecture
-
-```mermaid
-flowchart LR
-  A["Verizon Connect API"] --> B["Express server"]
-  C["GPS webhook"] --> B
-  B --> D["FluidTrackingEngine"]
-  D --> E["REST API /api/buses"]
-  D --> F["WebSocket location_update"]
-  F --> G["React BusProvider"]
-  G --> H["Leaflet map markers"]
-  I["OSRM route service"] --> J["Route polyline components"]
-  K["Browser geolocation"] --> H
-```
 
 ### Frontend
 
