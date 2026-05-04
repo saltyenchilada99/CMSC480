@@ -5,7 +5,7 @@ import './components/UserTracker.css';
 
 export const UserLocationMap = memo(function UserLocationMap({ userPos, onMarkerFocus }) {
     if (!userPos) return null;
-    const userIcon = GetUserIcon('userIcon');
+    const userIcon = GetUserIcon();
 
     return (
         <>
