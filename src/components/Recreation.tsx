@@ -15,6 +15,8 @@ type RecreationLocation = {
     link: string;
 };
 
+const minZoom : number = 17;
+
 export const recreationLocations: RecreationLocation[] = [{
     name: "Student Recreation Center",
     lat: 41.01097490879618,
@@ -109,9 +111,9 @@ export const recreationLocations: RecreationLocation[] = [{
     link: 'https://bloomsburgathletics.com/facilities/danny-litwhiler-field/6',
 }];
 
-export const Recreation = memo(function Recreation({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+export const Recreation = memo(function Recreation({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
     return (
-        recreationLocations.map((location: RecreationLocation) => {
+        recreationLocations.filter((location) => zoom >= minZoom).map((location: RecreationLocation) => {
             const position: [number, number] = [location.lat, -location.long];
 
             return (

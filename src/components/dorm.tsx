@@ -15,6 +15,8 @@ type DormLocation = {
     link: string;
 };
 
+const minZoom : number = 17;
+
 export const dormLocations: DormLocation[] = [{
     name: "Columbia Hall",
     lat: 41.00802,
@@ -157,11 +159,11 @@ export const dormLocations: DormLocation[] = [{
     link: 'https://www.commonwealthu.edu/campus-life/bloomsburg/housing/jessica-s-kozloff-apartments',
 }];
 
-export const Dorm = memo(function Dorm({ onMarkerFocus }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void }) {
+export const Dorm = memo(function Dorm({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
     const dormIcon = GetDormIcon();
 
     return (
-        dormLocations.map((dorm: DormLocation) => {
+        dormLocations.filter((dorm => zoom >= minZoom)).map((dorm: DormLocation) => {
             const position: [number, number] = [dorm.lat, -dorm.long];
 
             return (

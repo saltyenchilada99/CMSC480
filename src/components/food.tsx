@@ -3,6 +3,8 @@ import { Marker, Popup } from 'react-leaflet';
 // @ts-ignore
 import { GetFoodIcon } from './busMarkers.tsx';
 
+const minZoom = 17;
+
 type DiningVenue = {
     name: string;
     type: string;
@@ -150,16 +152,10 @@ export const foodLocations: FoodLocation[] = [
     },
 ];
 
-export const Food = memo(function Food({
-    foodVisibility = {},
-    onMarkerFocus,
-}: {
-    foodVisibility?: Record<string, boolean>;
-    onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void;
-}) {
+export const Food = memo(function Food({foodVisibility = {}, onMarkerFocus, zoom}: {foodVisibility?: Record<string, boolean>; onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom : number}) {
     return (
         <>
-            {foodLocations.filter((location) => foodVisibility[location.key] !== false).map((location: FoodLocation) => {
+            {foodLocations.filter((location) => foodVisibility[location.key] !== false && zoom >= minZoom).map((location: FoodLocation) => {
                 const position: [number, number] = [location.lat, -location.long];
 
                 return (

@@ -49,12 +49,12 @@ const ROUTE_LABELS = {
 };
 
 export const DEFAULT_FOOD_OPTIONS = {
-  'F-1': true, // Scranton Commons
-  'F-2': true, // Kehr Union
-  'F-3': true, // Soltz Hall
-  'F-4': true, // Andruss Library
-  'F-5': true, // Monty's
-  'F-6': true, // Warren SSC
+  'F-1': true,
+  'F-2': true,
+  'F-3': true,
+  'F-4': true,
+  'F-5': true,
+  'F-6': true,
 };
 
 function LocationButtonIcon() {
@@ -81,26 +81,37 @@ function CenterMapIcon() {
 
 function Toggle({ checked, onChange }) {
   return (
-    <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
+    <label className="toggle-switch" onClick={(event) => event.stopPropagation()}>
       <input type="checkbox" checked={checked} onChange={onChange} />
       <span className="toggle-track" />
     </label>
   );
 }
 
-export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onBusStatusOptionsToggle, onTrackingModeChange }) {
+export function SubHeader({
+  buses = [],
+  connectionStatus = 'Offline',
+  onBusesToggle,
+  onStopsToggle,
+  onRoutesToggle,
+  onRouteOptionsToggle,
+  onCenterMap,
+  onUserToggle,
+  onBusStatusOptionsToggle,
+  onTrackingModeChange,
+}) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [busStatusOptions, setBusStatusOptions] = useState(DEFAULT_BUS_STATUS_OPTIONS);
   const [trackingMode, setTrackingMode] = useState(DEFAULT_TRACKING_MODE);
   const [activeTab, setActiveTab] = useState('layers');
-  const [busesExpanded, setBusesExpanded] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   const syncMainBusesToggle = (nextOptions) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
       if (prev.buses === anyEnabled) return prev;
-      if (onBusesToggle) onBusesToggle(anyEnabled);
+      onBusesToggle?.(anyEnabled);
       return { ...prev, buses: anyEnabled };
     });
   };
@@ -109,7 +120,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
       if (prev.routes === anyEnabled) return prev;
-      if (onRoutesToggle) onRoutesToggle(anyEnabled);
+      onRoutesToggle?.(anyEnabled);
       return { ...prev, routes: anyEnabled };
     });
   };
@@ -118,36 +129,39 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     const next = { ...overlays, [key]: !overlays[key] };
     setOverlays(next);
 
-    if (key === 'buses' && onBusesToggle) onBusesToggle(next.buses);
     if (key === 'buses') {
+      onBusesToggle?.(next.buses);
       const nextBusStatusOptions = Object.fromEntries(
-        Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map(k => [k, next.buses])
+        Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => [statusKey, next.buses])
       );
       setBusStatusOptions(nextBusStatusOptions);
-      if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(nextBusStatusOptions);
-      if (!next.buses) setBusesExpanded(false);
+      onBusStatusOptionsToggle?.(nextBusStatusOptions);
     }
-    if (key === 'stops' && onStopsToggle) onStopsToggle(next.stops);
-    if (key === 'user' && onUserToggle) onUserToggle(next.user);
+
+    if (key === 'stops') onStopsToggle?.(next.stops);
+    if (key === 'user') onUserToggle?.(next.user);
+
     if (key === 'routes') {
-      if (onRoutesToggle) onRoutesToggle(next.routes);
-      const nextRouteOptions = { campus: next.routes, downtown: next.routes, walmart: next.routes };
+      onRoutesToggle?.(next.routes);
+      const nextRouteOptions = Object.fromEntries(
+        Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => [routeKey, next.routes])
+      );
       setRouteOptions(nextRouteOptions);
-      if (onRouteOptionsToggle) onRouteOptionsToggle(nextRouteOptions);
+      onRouteOptionsToggle?.(nextRouteOptions);
     }
   };
 
   const handleRouteOptionToggle = (routeKey) => {
     const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
     setRouteOptions(next);
-    if (onRouteOptionsToggle) onRouteOptionsToggle(next);
+    onRouteOptionsToggle?.(next);
     syncMainRoutesToggle(next);
   };
 
   const handleBusStatusOptionToggle = (statusKey) => {
     const next = { ...busStatusOptions, [statusKey]: !busStatusOptions[statusKey] };
     setBusStatusOptions(next);
-    if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(next);
+    onBusStatusOptionsToggle?.(next);
     syncMainBusesToggle(next);
   };
 
@@ -158,14 +172,14 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
       routes: DEFAULT_OVERLAYS.routes,
     }));
     setRouteOptions(DEFAULT_ROUTE_OPTIONS);
-    if (onStopsToggle) onStopsToggle(DEFAULT_OVERLAYS.stops);
-    if (onRoutesToggle) onRoutesToggle(DEFAULT_OVERLAYS.routes);
-    if (onRouteOptionsToggle) onRouteOptionsToggle(DEFAULT_ROUTE_OPTIONS);
+    onStopsToggle?.(DEFAULT_OVERLAYS.stops);
+    onRoutesToggle?.(DEFAULT_OVERLAYS.routes);
+    onRouteOptionsToggle?.(DEFAULT_ROUTE_OPTIONS);
   };
 
   const handleTrackingModeChange = (mode) => {
     setTrackingMode(mode);
-    if (onTrackingModeChange) onTrackingModeChange(mode);
+    onTrackingModeChange?.(mode);
   };
 
   const getStatusCategory = (status) => {
@@ -178,7 +192,12 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
   const getBusName = (bus, index) => bus.name || bus.id || `Bus ${index + 1}`;
   const statusSortOrder = { active: 0, idle: 1, stopped: 2 };
   const sortedBuses = buses
-    .map((bus, index) => ({ bus, index, statusCategory: getStatusCategory(bus.status), label: getBusName(bus, index) }))
+    .map((bus, index) => ({
+      bus,
+      index,
+      statusCategory: getStatusCategory(bus.status),
+      label: getBusName(bus, index),
+    }))
     .filter(({ statusCategory }) => statusCategory === 'active' || statusCategory === 'idle')
     .sort((a, b) => (
       statusSortOrder[a.statusCategory] - statusSortOrder[b.statusCategory] ||
@@ -191,12 +210,33 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     { key: 'user', label: 'My Location' },
   ];
 
+  if (!panelOpen) {
+    return (
+      <button
+        type="button"
+        className="map-layer-panel-open"
+        aria-label="Show map layer panel"
+        onClick={() => setPanelOpen(true)}
+      >
+        Layers
+      </button>
+    );
+  }
+
   return (
     <div className="map-layer-panel">
       <div className="map-layer-panel-header">
         <span>Map Layers</span>
-        <span className="map-layer-panel-header__mark">+</span>
+        <button
+          type="button"
+          className="map-layer-panel-collapse"
+          aria-label="Hide map layer panel"
+          onClick={() => setPanelOpen(false)}
+        >
+          Hide
+        </button>
       </div>
+
       <div className="map-layer-tabs" role="tablist" aria-label="Map panel views">
         <button
           type="button"
@@ -217,6 +257,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
           Layers
         </button>
       </div>
+
       <div className="map-layer-panel-body">
         {activeTab === 'buses' && (
           <div className="bus-tab-panel">
@@ -231,12 +272,12 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
             <div className="bus-tab-summary">
               <span className={`bus-tab-status-dot ${connectionStatus === 'Live' ? 'bus-tab-status-dot--live' : ''}`} />
               <span>{connectionStatus}</span>
-              <strong>{sortedBuses.length}/{buses.length} active/idle</strong>
+              <strong>{sortedBuses.length}/{buses.length}</strong>
             </div>
 
             <div className="route-suboptions bus-status-options">
               {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
-                <label key={statusKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                <label key={statusKey} className="route-suboption" onClick={(event) => event.stopPropagation()}>
                   <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
                   <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
                   <input
@@ -267,7 +308,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                       <span className="bus-list-row__main">
                         <span className="bus-list-row__name">{label}</span>
                         <span className="bus-list-row__meta">
-                          {bus.speed ?? 'N/A'} mph · {bus.heading ?? 'N/A'}°
+                          {bus.speed ?? 'N/A'} mph - {bus.heading ?? 'N/A'} deg
                         </span>
                       </span>
                       <span className={`bus-list-row__status bus-list-row__status--${statusCategory}`}>
@@ -286,8 +327,8 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                   type="button"
                   className={`tracking-mode-btn ${trackingMode === 'fluid' ? 'active' : ''}`}
                   aria-pressed={trackingMode === 'fluid'}
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     handleTrackingModeChange('fluid');
                   }}
                 >
@@ -297,8 +338,8 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                   type="button"
                   className={`tracking-mode-btn ${trackingMode === 'ping' ? 'active' : ''}`}
                   aria-pressed={trackingMode === 'ping'}
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     handleTrackingModeChange('ping');
                   }}
                 >
@@ -312,13 +353,8 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
           </div>
         )}
 
-        {activeTab === 'layers' && layers.map(({ key, icon, img, label, expandable }) => {
-          const isExpanded = expandable === 'buses'
-            ? busesExpanded
-            : false;
-          const isUserLayer = key === 'user';
-
-          if (isUserLayer) {
+        {activeTab === 'layers' && layers.map(({ key, icon, img, label }) => {
+          if (key === 'user') {
             return (
               <button
                 key={key}
@@ -348,12 +384,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
 
           return (
             <React.Fragment key={key}>
-              <div
-                className="layer-item"
-                onClick={() => {
-                  handleToggle(key);
-                }}
-              >
+              <div className="layer-item" onClick={() => handleToggle(key)}>
                 <div className="layer-item-left">
                   {img
                     ? <img src={img} alt={label} className="layer-item-icon-img" />
@@ -369,7 +400,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
               {key === 'routes' && (
                 <div className="route-suboptions">
                   {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
-                    <label key={routeKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
+                    <label key={routeKey} className="route-suboption" onClick={(event) => event.stopPropagation()}>
                       <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
                       <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
                       <input
@@ -381,54 +412,6 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                   ))}
                 </div>
               )}
-
-              {expandable === 'buses' && isExpanded && overlays[key] && (
-                <div className="route-suboptions">
-                  {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
-                    <label key={statusKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
-                      <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
-                      <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
-                      <input
-                        type="checkbox"
-                        checked={busStatusOptions[statusKey]}
-                        onChange={() => handleBusStatusOptionToggle(statusKey)}
-                      />
-                    </label>
-                  ))}
-
-                  <div className="tracking-mode-group">
-                    <span className="tracking-mode-label">Tracking Mode</span>
-                    <div className="tracking-mode-buttons">
-                      <button
-                        type="button"
-                        className={`tracking-mode-btn ${trackingMode === 'fluid' ? 'active' : ''}`}
-                        aria-pressed={trackingMode === 'fluid'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTrackingModeChange('fluid');
-                        }}
-                      >
-                        Fluid
-                      </button>
-                      <button
-                        type="button"
-                        className={`tracking-mode-btn ${trackingMode === 'ping' ? 'active' : ''}`}
-                        aria-pressed={trackingMode === 'ping'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTrackingModeChange('ping');
-                        }}
-                      >
-                        Ping
-                      </button>
-                    </div>
-                    <div className="tracking-mode-current" role="status" aria-live="polite">
-                      Current: <strong>{trackingMode === 'fluid' ? 'Fluid' : 'Ping'}</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
             </React.Fragment>
           );
         })}
@@ -446,7 +429,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
               </span>
               <span>Center Map</span>
             </button>
-            <button className="panel-reset-btn" onClick={handleReset}>
+            <button type="button" className="panel-reset-btn" onClick={handleReset}>
               Reset Layers
             </button>
           </>

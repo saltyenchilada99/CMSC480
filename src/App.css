@@ -84,6 +84,51 @@ html, body, #root {
   color: #6e1020;
 }
 
+.map-layer-panel-collapse,
+.map-layer-panel-open {
+  border: 1px solid rgba(110, 16, 32, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #6e1020;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.map-layer-panel-collapse {
+  padding: 4px 8px;
+}
+
+.map-layer-panel-open {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 1100;
+  padding: 8px 12px;
+  background: rgba(110, 16, 32, 0.92);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  pointer-events: auto;
+}
+
+.map-layer-panel-collapse:hover,
+.map-layer-panel-open:hover {
+  border-color: rgba(110, 16, 32, 0.32);
+  transform: translateY(-1px);
+}
+
+.map-layer-panel-collapse:hover {
+  background: rgba(110, 16, 32, 0.08);
+}
+
+.map-layer-panel-open:hover {
+  background: #6e1020;
+}
+
 .map-layer-panel-body {
   padding: 6px 8px 8px;
   display: flex;
@@ -417,6 +462,8 @@ html, body, #root {
 }
 
 .location-toggle-card:focus-visible,
+.map-layer-panel-collapse:focus-visible,
+.map-layer-panel-open:focus-visible,
 .panel-secondary-btn:focus-visible,
 .panel-reset-btn:focus-visible {
   outline: 2px solid rgba(110, 16, 32, 0.35);
@@ -701,6 +748,7 @@ html, body, #root {
   height: 24px;
   border-radius: 50%;
   color: #5b4d52;
+  pointer-events: all !important;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1093,4 +1141,38 @@ html, body, #root {
   .info-popup-card__data-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.map-layer-wrapper {
+  position: absolute;
+  z-index: 2000;
+  transition: right 0.3s ease;
+}
+
+.map-layer-toggle {
+  position: absolute;
+  top: 25px;
+  left: -15px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #6e1020;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+
+/* CLOSED */
+.map-layer-wrapper.closed {
+  width: 260px;
+  right: -245px;
+}
+
+/* OPEN */
+.map-layer-wrapper.open {
+  width: 260px;
+  right: -15px;
 }
