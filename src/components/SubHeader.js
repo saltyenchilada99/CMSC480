@@ -2,20 +2,12 @@ import React, { useState } from 'react';
 import '../styles/SubHeader.css';
 import busIcon from './bus_icon.png';
 import busStopIcon from './bus_stop_icon.png';
-import academicIcon from './academic_icon.png';
-import dormIcon from './dorm_icon.png';
-import foodIcon from './food_icon.svg';
-import recreationIcon from './recreation_icon.svg';
 
 const DEFAULT_OVERLAYS = {
   buses: true,
   stops: true,
   routes: true,
   user: true,
-  academics: false,
-  recreation: false,
-  dorms: false,
-  food: false,
 };
 
 const DEFAULT_TRACKING_MODE = 'ping';
@@ -23,7 +15,7 @@ const DEFAULT_TRACKING_MODE = 'ping';
 export const DEFAULT_BUS_STATUS_OPTIONS = {
   active: true,
   idle: true,
-  stopped: true,
+  stopped: false,
 };
 
 const BUS_STATUS_LABELS = {
@@ -65,17 +57,6 @@ export const DEFAULT_FOOD_OPTIONS = {
   'F-6': true, // Warren SSC
 };
 
-const FOOD_LABELS = {
-  'F-1': 'Scranton Commons',
-  'F-2': 'Kehr Union Building',
-  'F-3': 'Soltz Hall Dining',
-  'F-4': 'Andruss Library',
-  'F-5': "Monty's",
-  'F-6': 'Warren SSC',
-};
-
-const FOOD_DOT_COLOR = '#c0392b';
-
 function LocationButtonIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -107,25 +88,13 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onAcademicsToggle, onRecreationToggle, onDormsToggle, onFoodToggle, onFoodOptionsToggle, onBusStatusOptionsToggle, onTrackingModeChange }) {
+export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesToggle, onStopsToggle, onRoutesToggle, onRouteOptionsToggle, onCenterMap, onUserToggle, onBusStatusOptionsToggle, onTrackingModeChange }) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
-  const [foodOptions, setFoodOptions] = useState(DEFAULT_FOOD_OPTIONS);
   const [busStatusOptions, setBusStatusOptions] = useState(DEFAULT_BUS_STATUS_OPTIONS);
   const [trackingMode, setTrackingMode] = useState(DEFAULT_TRACKING_MODE);
   const [activeTab, setActiveTab] = useState('layers');
   const [busesExpanded, setBusesExpanded] = useState(false);
-  const [placesExpanded, setPlacesExpanded] = useState(true);
-  const [foodExpanded, setFoodExpanded] = useState(false);
-
-  const syncMainFoodToggle = (nextOptions) => {
-    const anyEnabled = Object.values(nextOptions).some(Boolean);
-    setOverlays((prev) => {
-      if (prev.food === anyEnabled) return prev;
-      if (onFoodToggle) onFoodToggle(anyEnabled);
-      return { ...prev, food: anyEnabled };
-    });
-  };
 
   const syncMainBusesToggle = (nextOptions) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
@@ -133,6 +102,15 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
       if (prev.buses === anyEnabled) return prev;
       if (onBusesToggle) onBusesToggle(anyEnabled);
       return { ...prev, buses: anyEnabled };
+    });
+  };
+
+  const syncMainRoutesToggle = (nextOptions) => {
+    const anyEnabled = Object.values(nextOptions).some(Boolean);
+    setOverlays((prev) => {
+      if (prev.routes === anyEnabled) return prev;
+      if (onRoutesToggle) onRoutesToggle(anyEnabled);
+      return { ...prev, routes: anyEnabled };
     });
   };
 
@@ -151,21 +129,11 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     }
     if (key === 'stops' && onStopsToggle) onStopsToggle(next.stops);
     if (key === 'user' && onUserToggle) onUserToggle(next.user);
-    if (key === 'academics' && onAcademicsToggle) onAcademicsToggle(next.academics);
-    if (key === 'recreation' && onRecreationToggle) onRecreationToggle(next.recreation);
-    if (key === 'dorms' && onDormsToggle) onDormsToggle(next.dorms);
     if (key === 'routes') {
       if (onRoutesToggle) onRoutesToggle(next.routes);
       const nextRouteOptions = { campus: next.routes, downtown: next.routes, walmart: next.routes };
       setRouteOptions(nextRouteOptions);
       if (onRouteOptionsToggle) onRouteOptionsToggle(nextRouteOptions);
-    }
-    if (key === 'food') {
-      if (onFoodToggle) onFoodToggle(next.food);
-      const nextFoodOptions = Object.fromEntries(Object.keys(DEFAULT_FOOD_OPTIONS).map(k => [k, next.food]));
-      setFoodOptions(nextFoodOptions);
-      if (onFoodOptionsToggle) onFoodOptionsToggle(nextFoodOptions);
-      if (!next.food) setFoodExpanded(false);
     }
   };
 
@@ -173,13 +141,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
     setRouteOptions(next);
     if (onRouteOptionsToggle) onRouteOptionsToggle(next);
-  };
-
-  const handleFoodOptionToggle = (foodKey) => {
-    const next = { ...foodOptions, [foodKey]: !foodOptions[foodKey] };
-    setFoodOptions(next);
-    if (onFoodOptionsToggle) onFoodOptionsToggle(next);
-    syncMainFoodToggle(next);
+    syncMainRoutesToggle(next);
   };
 
   const handleBusStatusOptionToggle = (statusKey) => {
@@ -190,26 +152,15 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
   };
 
   const handleReset = () => {
-    setOverlays(DEFAULT_OVERLAYS);
+    setOverlays((prev) => ({
+      ...prev,
+      stops: DEFAULT_OVERLAYS.stops,
+      routes: DEFAULT_OVERLAYS.routes,
+    }));
     setRouteOptions(DEFAULT_ROUTE_OPTIONS);
-    setFoodOptions(DEFAULT_FOOD_OPTIONS);
-    setBusStatusOptions(DEFAULT_BUS_STATUS_OPTIONS);
-    setTrackingMode(DEFAULT_TRACKING_MODE);
-    setBusesExpanded(false);
-    setPlacesExpanded(true);
-    setFoodExpanded(false);
-    if (onBusesToggle) onBusesToggle(DEFAULT_OVERLAYS.buses);
     if (onStopsToggle) onStopsToggle(DEFAULT_OVERLAYS.stops);
     if (onRoutesToggle) onRoutesToggle(DEFAULT_OVERLAYS.routes);
     if (onRouteOptionsToggle) onRouteOptionsToggle(DEFAULT_ROUTE_OPTIONS);
-    if (onUserToggle) onUserToggle(DEFAULT_OVERLAYS.user);
-    if (onAcademicsToggle) onAcademicsToggle(DEFAULT_OVERLAYS.academics);
-    if (onRecreationToggle) onRecreationToggle(DEFAULT_OVERLAYS.recreation);
-    if (onDormsToggle) onDormsToggle(DEFAULT_OVERLAYS.dorms);
-    if (onFoodToggle) onFoodToggle(DEFAULT_OVERLAYS.food);
-    if (onFoodOptionsToggle) onFoodOptionsToggle(DEFAULT_FOOD_OPTIONS);
-    if (onBusStatusOptionsToggle) onBusStatusOptionsToggle(DEFAULT_BUS_STATUS_OPTIONS);
-    if (onTrackingModeChange) onTrackingModeChange(DEFAULT_TRACKING_MODE);
   };
 
   const handleTrackingModeChange = (mode) => {
@@ -224,20 +175,20 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
     return 'stopped';
   };
 
-  const visibleBusCount = buses.filter((bus) => busStatusOptions[getStatusCategory(bus.status)]).length;
+  const getBusName = (bus, index) => bus.name || bus.id || `Bus ${index + 1}`;
+  const statusSortOrder = { active: 0, idle: 1, stopped: 2 };
+  const sortedBuses = buses
+    .map((bus, index) => ({ bus, index, statusCategory: getStatusCategory(bus.status), label: getBusName(bus, index) }))
+    .filter(({ statusCategory }) => statusCategory === 'active' || statusCategory === 'idle')
+    .sort((a, b) => (
+      statusSortOrder[a.statusCategory] - statusSortOrder[b.statusCategory] ||
+      a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
+    ));
 
   const layers = [
     { key: 'stops', img: busStopIcon, label: 'Bus Stops' },
     { key: 'routes', icon: 'R', label: 'Routes' },
-    { key: 'places', icon: 'P', label: 'Campus Places', expandable: 'places' },
     { key: 'user', label: 'My Location' },
-  ];
-
-  const placeLayers = [
-    { key: 'academics', img: academicIcon, label: 'Academic Buildings' },
-    { key: 'recreation', img: recreationIcon, label: 'Recreation + Athletics' },
-    { key: 'dorms', img: dormIcon, label: 'Dorms' },
-    { key: 'food', img: foodIcon, label: 'Dining' },
   ];
 
   return (
@@ -280,7 +231,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
             <div className="bus-tab-summary">
               <span className={`bus-tab-status-dot ${connectionStatus === 'Live' ? 'bus-tab-status-dot--live' : ''}`} />
               <span>{connectionStatus}</span>
-              <strong>{visibleBusCount}/{buses.length} shown</strong>
+              <strong>{sortedBuses.length}/{buses.length} active/idle</strong>
             </div>
 
             <div className="route-suboptions bus-status-options">
@@ -295,6 +246,37 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                   />
                 </label>
               ))}
+            </div>
+
+            <div className="bus-list-panel">
+              <div className="bus-list-panel__header">
+                <span>Live Bus List</span>
+                <span>{sortedBuses.length}</span>
+              </div>
+              {sortedBuses.length === 0 ? (
+                <div className="bus-list-empty">No active or idle buses</div>
+              ) : (
+                sortedBuses.map(({ bus, index, statusCategory, label }) => {
+                  const isShown = overlays.buses && busStatusOptions[statusCategory];
+
+                  return (
+                    <div
+                      key={bus.id || index}
+                      className={`bus-list-row ${isShown ? '' : 'bus-list-row--muted'}`}
+                    >
+                      <span className="bus-list-row__main">
+                        <span className="bus-list-row__name">{label}</span>
+                        <span className="bus-list-row__meta">
+                          {bus.speed ?? 'N/A'} mph · {bus.heading ?? 'N/A'}°
+                        </span>
+                      </span>
+                      <span className={`bus-list-row__status bus-list-row__status--${statusCategory}`}>
+                        {statusCategory === 'active' ? 'Active' : statusCategory === 'idle' ? 'Idle' : 'Stopped'}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             <div className="tracking-mode-group">
@@ -327,55 +309,13 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                 Current: <strong>{trackingMode === 'fluid' ? 'Fluid' : 'Ping'}</strong>
               </div>
             </div>
-
-            <div className="bus-list-panel">
-              <div className="bus-list-panel__header">
-                <span>Live Bus List</span>
-                <span>{buses.length}</span>
-              </div>
-              {buses.length === 0 ? (
-                <div className="bus-list-empty">No bus data available</div>
-              ) : (
-                buses.map((bus, index) => {
-                  const statusCategory = getStatusCategory(bus.status);
-                  const isShown = overlays.buses && busStatusOptions[statusCategory];
-                  const label = bus.name || bus.id || `Bus ${index + 1}`;
-
-                  return (
-                    <div
-                      key={bus.id || index}
-                      className={`bus-list-row ${isShown ? '' : 'bus-list-row--muted'}`}
-                    >
-                      <span className="bus-list-row__main">
-                        <span className="bus-list-row__name">{label}</span>
-                        <span className="bus-list-row__meta">
-                          {bus.speed ?? 'N/A'} mph · {bus.heading ?? 'N/A'}°
-                        </span>
-                      </span>
-                      <span className={`bus-list-row__status bus-list-row__status--${statusCategory}`}>
-                        {statusCategory === 'active' ? 'Active' : statusCategory === 'idle' ? 'Idle' : 'Stopped'}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
           </div>
         )}
 
         {activeTab === 'layers' && layers.map(({ key, icon, img, label, expandable }) => {
           const isExpanded = expandable === 'buses'
             ? busesExpanded
-            : expandable === 'places'
-              ? placesExpanded
-              : expandable === 'food'
-                ? foodExpanded
-                : false;
-          const setExpanded = expandable === 'buses'
-            ? setBusesExpanded
-            : expandable === 'places'
-              ? setPlacesExpanded
-              : setFoodExpanded;
+            : false;
           const isUserLayer = key === 'user';
 
           if (isUserLayer) {
@@ -411,11 +351,6 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
               <div
                 className="layer-item"
                 onClick={() => {
-                  if (expandable === 'places') {
-                    setExpanded(p => !p);
-                    return;
-                  }
-
                   handleToggle(key);
                 }}
               >
@@ -427,19 +362,7 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                   <span className="layer-item-label">{label}</span>
                 </div>
                 <div className="layer-item-actions">
-                  {expandable === 'places' && (
-                    <button
-                      type="button"
-                      className="layer-expand-btn"
-                      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${label} options`}
-                      onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }}
-                    >
-                      {isExpanded ? 'v' : '>'}
-                    </button>
-                  )}
-                  {key !== 'places' && (
-                    <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
-                  )}
+                  <Toggle checked={overlays[key]} onChange={() => handleToggle(key)} />
                 </div>
               </div>
 
@@ -454,18 +377,6 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                         checked={routeOptions[routeKey]}
                         onChange={() => handleRouteOptionToggle(routeKey)}
                       />
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {expandable === 'places' && isExpanded && (
-                <div className="route-suboptions place-suboptions">
-                  {placeLayers.map((placeLayer) => (
-                    <label key={placeLayer.key} className="route-suboption place-suboption" onClick={(e) => e.stopPropagation()}>
-                      <img src={placeLayer.img} alt="" className="place-suboption-icon" />
-                      <span className="route-suboption-label">{placeLayer.label}</span>
-                      <Toggle checked={overlays[placeLayer.key]} onChange={() => handleToggle(placeLayer.key)} />
                     </label>
                   ))}
                 </div>
@@ -518,39 +429,28 @@ export function SubHeader({ buses = [], connectionStatus = 'Offline', onBusesTog
                 </div>
               )}
 
-              {expandable === 'food' && isExpanded && overlays[key] && (
-                <div className="route-suboptions">
-                  {Object.keys(DEFAULT_FOOD_OPTIONS).map((foodKey) => (
-                    <label key={foodKey} className="route-suboption" onClick={(e) => e.stopPropagation()}>
-                      <span className="route-dot" style={{ background: FOOD_DOT_COLOR }} />
-                      <span className="route-suboption-label">{FOOD_LABELS[foodKey]}</span>
-                      <input
-                        type="checkbox"
-                        checked={foodOptions[foodKey]}
-                        onChange={() => handleFoodOptionToggle(foodKey)}
-                      />
-                    </label>
-                  ))}
-                </div>
-              )}
             </React.Fragment>
           );
         })}
 
-        <div className="panel-divider" />
-        <button
-          type="button"
-          className="panel-secondary-btn"
-          onClick={onCenterMap}
-        >
-          <span className="panel-secondary-btn-icon">
-            <CenterMapIcon />
-          </span>
-          <span>Center Map</span>
-        </button>
-        <button className="panel-reset-btn" onClick={handleReset}>
-          Reset Defaults
-        </button>
+        {activeTab === 'layers' && (
+          <>
+            <div className="panel-divider" />
+            <button
+              type="button"
+              className="panel-secondary-btn"
+              onClick={onCenterMap}
+            >
+              <span className="panel-secondary-btn-icon">
+                <CenterMapIcon />
+              </span>
+              <span>Center Map</span>
+            </button>
+            <button className="panel-reset-btn" onClick={handleReset}>
+              Reset Layers
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

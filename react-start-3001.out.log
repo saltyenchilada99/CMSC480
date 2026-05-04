@@ -91,3 +91,75 @@ webpack compiled [1m[32msuccessfully[39m[22m
 Compiling...
 Compiled successfully!
 webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Failed to compile.
+
+[eslint] 
+src\App.js
+  Line 224:44:  'showRoutes' is not defined       no-undef
+  Line 224:58:  'routeVisibility' is not defined  no-undef
+  Line 225:46:  'showRoutes' is not defined       no-undef
+  Line 225:60:  'routeVisibility' is not defined  no-undef
+  Line 226:45:  'showRoutes' is not defined       no-undef
+  Line 226:59:  'routeVisibility' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+[1m[31mERROR[39m[22m in [1m[eslint] 
+src\App.js
+  Line 224:44:  'showRoutes' is not defined       no-undef
+  Line 224:58:  'routeVisibility' is not defined  no-undef
+  Line 225:46:  'showRoutes' is not defined       no-undef
+  Line 225:60:  'routeVisibility' is not defined  no-undef
+  Line 226:45:  'showRoutes' is not defined       no-undef
+  Line 226:59:  'routeVisibility' is not defined  no-undef
+
+Search for the keywords to learn more about each [1m[31merror[39m[22m[1m.[39m[22m
+
+webpack compiled with [1m[31m1 error[39m[22m
+Compiling...
+Failed to compile.
+
+Attempted import error: 'GetRecreationIcon' is not exported from './busMarkers.tsx' (imported as 'GetRecreationIcon').
+[1m[31mERROR[39m[22m in [1m./src/components/Recreation.tsx[39m[22m [1m[32m87:12-29[39m[22m
+[1mexport 'GetRecreationIcon' (imported as 'GetRecreationIcon') was [1m[31mnot found[39m[22m[1m in './busMarkers.tsx' (possible exports: [1m[32mGetAcademicIcon, GetBusIcon, GetBusStopIcon, GetDormIcon, GetUserIcon[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m./src/components/food.tsx[39m[22m [1m[32m121:14-25[39m[22m
+[1mexport 'GetFoodIcon' (imported as 'GetFoodIcon') was [1m[31mnot found[39m[22m[1m in './busMarkers.tsx' (possible exports: [1m[32mGetAcademicIcon, GetBusIcon, GetBusStopIcon, GetDormIcon, GetUserIcon[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m[eslint] 
+src\App.js
+  Line 224:44:  'showRoutes' is not defined       no-undef
+  Line 224:58:  'routeVisibility' is not defined  no-undef
+  Line 225:46:  'showRoutes' is not defined       no-undef
+  Line 225:60:  'routeVisibility' is not defined  no-undef
+  Line 226:45:  'showRoutes' is not defined       no-undef
+  Line 226:59:  'routeVisibility' is not defined  no-undef
+
+Search for the keywords to learn more about each [1m[31merror[39m[22m[1m.[39m[22m
+
+webpack compiled with [1m[31m3 errors[39m[22m
+Compiling...
+Failed to compile.
+
+Attempted import error: 'busStopLibrary' is not exported from './busStop.tsx' (imported as 'busStopLibrary').
+[1m[31mERROR[39m[22m in [1m./src/components/Header.js[39m[22m [1m[32m22:31-45[39m[22m
+[1mexport 'busStopLibrary' (imported as 'busStopLibrary') was [1m[31mnot found[39m[22m[1m in './busStop.tsx' (possible exports: [1m[32mBusStop[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m./src/components/Recreation.tsx[39m[22m [1m[32m87:12-29[39m[22m
+[1mexport 'GetRecreationIcon' (imported as 'GetRecreationIcon') was [1m[31mnot found[39m[22m[1m in './busMarkers.tsx' (possible exports: [1m[32mGetAcademicIcon, GetBusIcon, GetBusStopIcon, GetDormIcon, GetUserIcon[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m./src/components/food.tsx[39m[22m [1m[32m121:14-25[39m[22m
+[1mexport 'GetFoodIcon' (imported as 'GetFoodIcon') was [1m[31mnot found[39m[22m[1m in './busMarkers.tsx' (possible exports: [1m[32mGetAcademicIcon, GetBusIcon, GetBusStopIcon, GetDormIcon, GetUserIcon[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m[eslint] 
+src\App.js
+  Line 224:44:  'showRoutes' is not defined       no-undef
+  Line 224:58:  'routeVisibility' is not defined  no-undef
+  Line 225:46:  'showRoutes' is not defined       no-undef
+  Line 225:60:  'routeVisibility' is not defined  no-undef
+  Line 226:45:  'showRoutes' is not defined       no-undef
+  Line 226:59:  'routeVisibility' is not defined  no-undef
+
+Search for the keywords to learn more about each [1m[31merror[39m[22m[1m.[39m[22m
+
+webpack compiled with [1m[31m4 errors[39m[22m

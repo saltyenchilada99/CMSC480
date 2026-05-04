@@ -16,7 +16,7 @@ import {
 import { BusRoute, LatLng } from './BusRoute';
 import { FluidTrackingEngine } from './FluidTracking';
 
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
+const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const USE_POLLING = process.env.USE_POLLING !== 'false';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? '30000', 10);
 const DEFAULT_INTERPOLATION_WINDOW_MS = USE_POLLING ? POLL_INTERVAL_MS : 30_000;
@@ -89,6 +89,10 @@ const wsClients = new Set<WebSocket>();
 function mapLocationForClient(loc: VehicleLocation, rawLoc?: VehicleLocation) {
     const pingLat = rawLoc?.Latitude ?? loc.Latitude;
     const pingLng = rawLoc?.Longitude ?? loc.Longitude;
+    const pingHeading = rawLoc?.Heading ?? loc.Heading;
+    const pingSpeed = rawLoc?.Speed ?? loc.Speed;
+    const pingStatus = rawLoc?.Status ?? loc.Status;
+    const pingLastUpdated = rawLoc?.LastUpdated ?? loc.LastUpdated;
 
     return {
         id: loc.VehicleNumber,
@@ -99,10 +103,18 @@ function mapLocationForClient(loc: VehicleLocation, rawLoc?: VehicleLocation) {
         fluidLng: loc.Longitude,
         pingLat,
         pingLng,
+        pingHeading,
+        pingSpeed,
+        pingStatus,
+        pingLastUpdated,
         heading: loc.Heading,
         speed: loc.Speed,
         status: loc.Status,
         lastUpdated: loc.LastUpdated,
+        fluidHeading: loc.Heading,
+        fluidSpeed: loc.Speed,
+        fluidStatus: loc.Status,
+        fluidLastUpdated: loc.LastUpdated,
         rawLastUpdated: loc.RawLastUpdated,
         displayTimestamp: loc.DisplayTimestamp,
         isSmoothed: loc.IsSmoothed ?? false,

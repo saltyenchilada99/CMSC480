@@ -50,11 +50,11 @@ html, body, #root {
 /* Floating layer panel inside the map */
 .map-layer-panel {
   position: absolute;
-  top: 16px;
+  top: 10px;
   right: 16px;
-  bottom: 16px;
   z-index: 1100;
   width: 260px;
+  max-height: calc(100% - 20px);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -552,22 +552,6 @@ html, body, #root {
   accent-color: #6e1020;
   cursor: pointer;
   margin-left: auto;
-}
-
-.place-suboptions {
-  margin-left: 20px;
-}
-
-.place-suboption {
-  min-height: 34px;
-}
-
-.place-suboption-icon {
-  width: 22px;
-  height: 22px;
-  object-fit: cover;
-  border-radius: 5px;
-  flex-shrink: 0;
 }
 
 .tracking-mode-group {
