@@ -43,14 +43,18 @@ async function writeRoute(filename, name, coords) {
   );
 }
 
+const lowerLoopStart = [41.00864, -76.44540];
+const lowerLoopConnector = [41.00880, -76.44506];
+
 const campusStops = [
-  [41.00864, -76.44540],
-  [41.01434, -76.44654],
-  [41.01640, -76.44624],
-  [41.01740, -76.45308],
-  [41.01525, -76.44961],
-  [41.01751, -76.45038],
-  [41.00880, -76.44506],
+  lowerLoopStart,
+  [41.01525, -76.44961], // Nelson Field House
+  [41.01740, -76.45308], // JKA stop
+  [41.01703, -76.45398], // through JKA before looping back out
+  [41.01820, -76.448865], // Orange Lot
+  [41.01640, -76.44624], // MOA
+  [41.01434, -76.44654], // MPA
+  lowerLoopStart,
 ];
 
 const manualParkingLotPath = [
@@ -61,6 +65,12 @@ const manualParkingLotPath = [
   [41.00796, -76.44479],
   [41.00786, -76.44471],
   [41.00800, -76.44440],
+];
+
+const lowerLoopReturnPath = [
+  [41.00800, -76.44440],
+  [41.008748, -76.44501],
+  lowerLoopConnector,
 ];
 
 const downtownStops = [
@@ -93,8 +103,9 @@ await mkdir(routesDir, { recursive: true });
 
 const campusOsrmCoords = await fetchOsrmRoute(campusStops);
 await writeRoute("campus-loop.geojson", "Campus Loop", [
-  campusStops[6],
+  lowerLoopConnector,
   ...manualParkingLotPath,
+  ...lowerLoopReturnPath.slice(1),
   ...campusOsrmCoords.slice(1),
 ]);
 

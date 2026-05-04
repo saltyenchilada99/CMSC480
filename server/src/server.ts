@@ -5,6 +5,8 @@
 
 import express, { Request, Response } from 'express';
 import { createServer } from 'http';
+import path from 'path';
+import { readFile } from 'fs/promises';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
     startPolling,
@@ -28,6 +30,7 @@ const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVA
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
 const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
+const ROUTES_DIR = process.env.ROUTES_DIR ?? path.resolve(__dirname, '../../public/routes');
 
 const CAMPUS_LOOP_PATH: LatLng[] = [
     { lat: 41.008689, lng: -76.445122 },
@@ -85,6 +88,41 @@ let routes: BusRoute[] = [];
 let fluidTracking: FluidTrackingEngine | null = null;
 
 const wsClients = new Set<WebSocket>();
+
+type RouteFileSpec = {
+    filename: string;
+    name: string;
+    isLoop: boolean;
+};
+
+type GeoJsonLineString = {
+    type: 'LineString';
+    coordinates: number[][];
+};
+
+type GeoJsonMultiLineString = {
+    type: 'MultiLineString';
+    coordinates: number[][][];
+};
+
+type GeoJsonFeature = {
+    type: 'Feature';
+    properties?: {
+        name?: string;
+    };
+    geometry?: GeoJsonLineString | GeoJsonMultiLineString;
+};
+
+type GeoJsonRouteFile = GeoJsonFeature | {
+    type: 'FeatureCollection';
+    features?: GeoJsonFeature[];
+};
+
+const ROUTE_FILES: RouteFileSpec[] = [
+    { filename: 'campus-loop.geojson', name: 'Campus Loop', isLoop: true },
+    { filename: 'downtown-loop.geojson', name: 'Downtown Loop', isLoop: true },
+    { filename: 'walmart-trip.geojson', name: 'Walmart Trip', isLoop: false },
+];
 
 function mapLocationForClient(loc: VehicleLocation, rawLoc?: VehicleLocation) {
     const pingLat = rawLoc?.Latitude ?? loc.Latitude;
@@ -222,10 +260,79 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('error', () => wsClients.delete(ws));
 });
 
+function getRouteFeatures(routeFile: GeoJsonRouteFile): GeoJsonFeature[] {
+    if (routeFile.type === 'FeatureCollection') {
+        return routeFile.features ?? [];
+    }
+
+    if (routeFile.type === 'Feature') {
+        return [routeFile];
+    }
+
+    return [];
+}
+
+function getCoordinatesFromGeometry(geometry: GeoJsonFeature['geometry']): number[][] {
+    if (!geometry) return [];
+
+    if (geometry.type === 'LineString') {
+        return geometry.coordinates;
+    }
+
+    if (geometry.type === 'MultiLineString') {
+        return geometry.coordinates.flat();
+    }
+
+    return [];
+}
+
+function coordinatesToPath(coordinates: number[][]): LatLng[] {
+    return coordinates
+        .map((coordinate) => {
+            const [lng, lat] = coordinate;
+            return { lat, lng };
+        })
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+}
+
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+async function loadRouteFromGeoJson({ filename, name, isLoop }: RouteFileSpec): Promise<BusRoute> {
+    const routePath = path.join(ROUTES_DIR, filename);
+    const raw = await readFile(routePath, 'utf8');
+    const routeFile = JSON.parse(raw) as GeoJsonRouteFile;
+    const features = getRouteFeatures(routeFile);
+    const feature = features.find(item => item.properties?.name === name) ?? features[0];
+    const routeCoords = getCoordinatesFromGeometry(feature?.geometry);
+    const routePathPoints = coordinatesToPath(routeCoords);
+
+    if (routePathPoints.length < 2) {
+        throw new Error(`Route file ${filename} did not contain at least two valid coordinates.`);
+    }
+
+    return new BusRoute(name, routePathPoints, ROUTE_CAPTURE_DISTANCE_METERS, isLoop);
+}
+
 async function buildRoutes(): Promise<BusRoute[]> {
-    // Keep backend route-lock smoothing in sync with the currently configured map routes.
-    // For now, we guarantee at least Campus Loop support so smoothing and broadcasts are stable.
-    // In the future, this might fetch from a database or GeoJSON file.
+    const loadedRoutes: BusRoute[] = [];
+
+    for (const routeFile of ROUTE_FILES) {
+        try {
+            const route = await loadRouteFromGeoJson(routeFile);
+            loadedRoutes.push(route);
+            console.log(`[Routes] Loaded ${route.name} from ${routeFile.filename} (${Math.round(route.getTotalMeters())}m)`);
+        } catch (error) {
+            console.warn(`[Routes] Failed to load ${routeFile.filename}: ${getErrorMessage(error)}`);
+        }
+    }
+
+    if (loadedRoutes.length > 0) {
+        return loadedRoutes;
+    }
+
+    console.warn('[Routes] Falling back to built-in Campus Loop route');
     return [
         new BusRoute('Campus Loop', CAMPUS_LOOP_PATH, ROUTE_CAPTURE_DISTANCE_METERS, true)
     ];
@@ -262,7 +369,8 @@ async function startServer() {
         fluidTracking = new FluidTrackingEngine(routes, {
             delayMs: INTERPOLATION_WINDOW_MS,
             routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
-            routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS
+            routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
+            adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS
         });
         console.log(`[Routes] Loaded ${routes.length} routes for route-lock smoothing`);
 
