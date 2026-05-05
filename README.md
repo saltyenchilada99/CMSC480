@@ -26,25 +26,28 @@ The current app focuses on three transportation routes: Campus Loop, Downtown Lo
 - Campus Loop, Downtown Loop, and Walmart Trip route overlays.
 - Bus stop popups with stop descriptions, route chips, locations, and images.
 - Search across bus stops, dorms, academic buildings, recreation locations, and dining.
-- Layer controls for buses, bus statuses, stops, routes, user location, academics, recreation, dorms, and dining.
-- Per-route and per-dining-location subfilters.
+- Layer controls for buses, bus statuses, stops, routes, and user location.
+- Academic, recreation, dorm, and dining markers that appear at close campus zoom levels.
+- Per-route subfilters.
 - Browser geolocation marker with a center-map workflow.
 - Bus schedule modal with route service details.
 - Map viewport logic that recenters markers and popups without losing the campus bounds.
 
 ### Frontend
 
-The frontend lives in `src/` and is built with Create React App. `src/App.js` owns the main map state: overlay visibility, route visibility, bus status filters, tracking mode, zoom, user location, and focus targets. `react-leaflet` renders the map, markers, popups, and route polylines.
+The frontend lives in `src/` and is now formalized as a TypeScript React app built with Create React App. `src/App.tsx` owns the main map state: overlay visibility, route visibility, bus status filters, tracking mode, zoom, user location, and focus targets. `react-leaflet` renders the map, markers, popups, and route overlays.
+
+The root project includes `tsconfig.json`, a `typecheck` script, shared frontend types in `src/types/frontend.ts`, and CRA-compatible React/Leaflet type packages. The only JavaScript file intentionally left in `src/` is `src/setupProxy.js`, because Create React App expects that development proxy hook to be CommonJS.
 
 Important frontend modules:
 
 - `src/components/bus.tsx` - opens the WebSocket connection through `BusProvider` and renders live bus markers.
-- `src/components/Header.js` - renders the title, bus schedule modal, live status badge, and search.
-- `src/components/SubHeader.js` - renders the map layer panel, route filters, food filters, bus status filters, tracking mode selector, reset button, and center-map button.
+- `src/components/Header.tsx` - renders the title, bus schedule modal, live status badge, and search.
+- `src/components/SubHeader.tsx` - renders the map layer panel, route filters, bus status filters, tracking mode selector, reset button, and center-map button.
 - `src/components/MapViewportController.tsx` - handles map panning, focus targets, popup centering, and reset behavior.
 - `src/components/busStop.tsx` - stores and renders the bus stop marker library.
 - `src/components/Academic.tsx`, `dorm.tsx`, `Recreation.tsx`, and `food.tsx` - store and render campus point-of-interest layers.
-- `src/components/routes/*.tsx` - fetch OSRM routes, decode polylines, and render the three route overlays.
+- `src/components/routes/*.tsx` - load static GeoJSON route files from `public/routes/` and render the three route overlays.
 
 ### Backend
 
@@ -61,12 +64,12 @@ Important backend modules:
 
 - React 19
 - Create React App / react-scripts
+- TypeScript for the frontend and backend
 - React Leaflet and Leaflet
-- TypeScript for server code and several map components
 - Express
 - WebSocket / ws
 - Verizon Connect / Fleetmatics Reveal API
-- OSRM public routing service for client-side route geometry
+- Static GeoJSON route overlays generated from route data
 - Stadia Maps / OpenStreetMap tile attribution in the Leaflet tile layer
 
 ## Getting Started
@@ -76,7 +79,8 @@ Important backend modules:
 - Node.js 18 or newer
 - npm
 - Verizon Connect API credentials for live vehicle data
-- Network access for map tiles and OSRM route polyline requests
+- Network access for map tiles
+- Network access to OSRM only when regenerating static route GeoJSON files
 
 ### Install Dependencies
 
@@ -146,7 +150,7 @@ The static map layers can render without live bus data, but the status badge wil
 | `VZC_USERNAME` | `YOUR_USERNAME` fallback in code | Verizon Connect API username. |
 | `VZC_PASSWORD` | `YOUR_PASSWORD` fallback in code | Verizon Connect API password. |
 | `VZC_APP_ID` | `YOUR_APP_ID` fallback in code | Verizon Connect Atmosphere app id. |
-| `PORT` | `3000` in server code | Backend HTTP/WebSocket port. Use `3001` for this app because the React client expects it. |
+| `PORT` | `3001` | Backend HTTP/WebSocket port. Keep this aligned with `src/setupProxy.js` and the WebSocket URL in `src/components/bus.tsx`. |
 | `USE_POLLING` | `true` | Enables polling Verizon Connect. Set to `false` for webhook-only mode. |
 | `POLL_INTERVAL_MS` | `30000` | Polling interval for vehicle locations. |
 | `FLUID_INTERPOLATION_WINDOW_MS` | Same as poll interval when polling | Delay window used for smoothed playback. |
@@ -178,10 +182,22 @@ npm test -- --watchAll=false
 Runs the React test suite once.
 
 ```bash
+npm run typecheck
+```
+
+Runs the frontend TypeScript compiler without emitting files.
+
+```bash
 npm run build
 ```
 
 Builds the React app into `build/`.
+
+```bash
+npm run generate:routes
+```
+
+Regenerates the static GeoJSON route files in `public/routes/` using the OSRM public routing service.
 
 ### Backend
 
@@ -233,6 +249,7 @@ Broadcasts `location_update` messages to connected clients. The React app listen
 .
 |-- public/
 |   |-- busStopImages/        # Stop photos used in bus stop popups
+|   |-- routes/               # Static GeoJSON route overlays
 |   `-- index.html
 |-- resources/                # Presentation/data-flow assets and shared icons
 |-- server/
@@ -248,19 +265,29 @@ Broadcasts `location_update` messages to connected clients. The React app listen
 |   |-- components/
 |   |   |-- routes/
 |   |   |-- Academic.tsx
-|   |   |-- Header.js
-|   |   |-- SubHeader.js
+|   |   |-- Header.tsx
+|   |   |-- SubHeader.tsx
 |   |   |-- bus.tsx
 |   |   |-- busStop.tsx
 |   |   |-- dorm.tsx
 |   |   |-- food.tsx
 |   |   `-- Recreation.tsx
 |   |-- styles/
-|   |-- App.js
-|   |-- UserTracker.js
+|   |-- types/
+|   |   |-- frontend.ts
+|   |   |-- leaflet-filelayer.d.ts
+|   |   `-- leaflet-filelayer-augmentation.d.ts
+|   |-- App.tsx
+|   |-- App.test.tsx
+|   |-- UserTracker.tsx
+|   |-- index.tsx
+|   |-- react-app-env.d.ts
+|   |-- reportWebVitals.ts
+|   |-- setupTests.ts
 |   |-- setupProxy.js
-|   `-- index.js
+|   `-- bus.ts
 |-- package.json
+|-- tsconfig.json
 `-- README.md
 ```
 
@@ -276,11 +303,10 @@ Broadcasts `location_update` messages to connected clients. The React app listen
 
 ### Maintenance Notes
 
-- The active frontend mixes `.js` and `.tsx` files. That works in the current build, but future refactors should either formalize TypeScript for the frontend or keep new UI work consistently JavaScript.
-- `src/bus.js` and `src/busStop.js` are legacy files from earlier iterations. The active app uses `src/components/bus.tsx` and `src/components/busStop.tsx`.
-- Route polylines are fetched from the public OSRM service in the browser. If OSRM is unavailable, the rest of the map can still render but route lines may not appear.
-- The backend route-lock smoothing currently guarantees Campus Loop support. Downtown Loop and Walmart Trip render on the client, but backend route-lock definitions should be expanded if live buses need smoothing on those routes too.
-- The app depends on a local backend running on port `3001`. If `PORT` is omitted, the server code defaults to `3000`, which conflicts with the React dev server and breaks the client WebSocket expectation.
+- The active frontend has been refactored to TypeScript. New React UI work should use `.tsx`, shared non-React frontend utilities should use `.ts`, and shared map/data shapes should live in `src/types/frontend.ts` when they are reused.
+- `src/setupProxy.js` remains JavaScript by design because Create React App loads it as a CommonJS development-server hook.
+- Route overlays and backend route-lock smoothing both load the static GeoJSON files in `public/routes/`, covering Campus Loop, Downtown Loop, and Walmart Trip. If those files are missing or invalid, the rest of the map can still render but route lines and route-locked smoothing may be unavailable.
+- The app expects the local backend on port `3001`. The backend defaults to `3001`; if `PORT` is overridden, update `src/setupProxy.js` and the WebSocket URL in `src/components/bus.tsx` to match.
 
 ## Contribution Analysis
 
@@ -298,7 +324,7 @@ This summary is based on the git commit history through May 3, 2026. Non-merge c
 
 ### The status badge says `Reconnecting...`
 
-Make sure the backend is running on port `3001` and that `server/.env` includes `PORT=3001`. Also confirm the WebSocket URL in `src/components/bus.tsx` still points to `ws://localhost:3001`.
+Make sure the backend is running on port `3001`, or that `src/setupProxy.js` and the WebSocket URL in `src/components/bus.tsx` match any custom backend port.
 
 ### The map loads but no live buses appear
 
@@ -306,7 +332,7 @@ Check `/api/health` and `/api/buses` on the backend. If the server is running bu
 
 ### Route lines do not appear
 
-The route components fetch geometry from the public OSRM service. Check browser network errors and confirm the machine has internet access.
+The route components load static GeoJSON files from `public/routes/`. Confirm those files exist and are valid. To regenerate them, run `npm run generate:routes`; that command uses the public OSRM service and requires network access.
 
 ### My Location does not appear
 
