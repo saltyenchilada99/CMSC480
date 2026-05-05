@@ -1,12 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { useMap, useMapEvents } from 'react-leaflet';
-
-type MapFocusTarget = {
-    type: 'campus' | 'user' | 'marker';
-    center: [number, number];
-    zoom?: number;
-};
+import type { MapFocusTarget } from '../types/frontend';
 
 type MapViewportControllerProps = {
     focusTarget: MapFocusTarget;
@@ -64,12 +59,16 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
 
     useEffect(() => {
         const getBoundedCenter = (center: [number, number], zoom: number) => {
-            const maxBounds = map.options.maxBounds;
+            const configuredMaxBounds = map.options.maxBounds;
             const desiredCenter = L.latLng(center);
 
-            if (!maxBounds) {
+            if (!configuredMaxBounds) {
                 return desiredCenter;
             }
+
+            const maxBounds = configuredMaxBounds instanceof L.LatLngBounds
+                ? configuredMaxBounds
+                : L.latLngBounds(configuredMaxBounds);
 
             const size = map.getSize();
             const southWestPoint = map.project(maxBounds.getSouthWest(), zoom);

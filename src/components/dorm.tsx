@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { GetDormIcon } from './busMarkers.tsx';
-import { MarkerPopupCard } from './MarkerPopupCard.tsx';
+import { GetDormIcon } from './busMarkers';
+import { MarkerPopupCard } from './MarkerPopupCard';
 
 type DormLocation = {
     name: string;
@@ -162,8 +162,11 @@ export const dormLocations: DormLocation[] = [{
 export const Dorm = memo(function Dorm({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
     const dormIcon = GetDormIcon();
 
+    if (zoom < minZoom) return null;
+
     return (
-        dormLocations.filter((dorm => zoom >= minZoom)).map((dorm: DormLocation) => {
+        <>
+        {dormLocations.map((dorm: DormLocation) => {
             const position: [number, number] = [dorm.lat, -dorm.long];
 
             return (
@@ -191,5 +194,7 @@ export const Dorm = memo(function Dorm({ onMarkerFocus, zoom }: { onMarkerFocus?
                 </Popup>
             </Marker>
             );
-        }));
+        })}
+        </>
+    );
 });

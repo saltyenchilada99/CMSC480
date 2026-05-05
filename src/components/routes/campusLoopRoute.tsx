@@ -1,4 +1,4 @@
-import { FileLayerRoute } from "./FileLayerRoute.tsx";
+import { FileLayerRoute } from './FileLayerRoute';
 
 export function CampusLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
     return (

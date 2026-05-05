@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { GetBusStopIcon } from './busMarkers.tsx';
+import { GetBusStopIcon } from './busMarkers';
 
 type RouteInfo = {
     name: string;

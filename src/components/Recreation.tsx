@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { GetRecreationIcon } from './busMarkers.tsx';
-import { MarkerPopupCard } from './MarkerPopupCard.tsx';
+import { GetRecreationIcon } from './busMarkers';
+import { MarkerPopupCard } from './MarkerPopupCard';
 
 type RecreationLocation = {
     name: string;
@@ -112,8 +112,11 @@ export const recreationLocations: RecreationLocation[] = [{
 }];
 
 export const Recreation = memo(function Recreation({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
+    if (zoom < minZoom) return null;
+
     return (
-        recreationLocations.filter((location) => zoom >= minZoom).map((location: RecreationLocation) => {
+        <>
+        {recreationLocations.map((location: RecreationLocation) => {
             const position: [number, number] = [location.lat, -location.long];
 
             return (
@@ -141,6 +144,7 @@ export const Recreation = memo(function Recreation({ onMarkerFocus, zoom }: { on
                     </Popup>
                 </Marker>
             );
-        })
+        })}
+        </>
     );
 });

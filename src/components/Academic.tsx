@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { GetAcademicIcon } from './busMarkers.tsx';
-import { MarkerPopupCard } from './MarkerPopupCard.tsx';
+import { GetAcademicIcon } from './busMarkers';
+import { MarkerPopupCard } from './MarkerPopupCard';
 
 const minZoom : number = 17;
 
@@ -176,8 +176,11 @@ export const academicBuildings: AcademicBuilding[] = [{
 export const Academic = memo(function Academic({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
     const academicIcon = GetAcademicIcon();
 
+    if (zoom < minZoom) return null;
+
     return (
-        academicBuildings.filter((academic) => zoom >= minZoom).map((academic: AcademicBuilding) => {
+        <>
+        {academicBuildings.map((academic: AcademicBuilding) => {
             const position: [number, number] = [academic.lat, -academic.long];
 
             return (
@@ -205,5 +208,7 @@ export const Academic = memo(function Academic({ onMarkerFocus, zoom }: { onMark
                 </Popup>
             </Marker>
             );
-        }));
+        })}
+        </>
+    );
 });

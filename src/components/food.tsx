@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
-// @ts-ignore
-import { GetFoodIcon } from './busMarkers.tsx';
+import { GetFoodIcon } from './busMarkers';
+import type { FoodKey, FoodVisibility, MapPoint, MarkerFocusHandler } from '../types/frontend';
 
 const minZoom = 17;
 
@@ -17,7 +17,7 @@ type FoodLocation = {
     long: number;
     desc: string;
     venues: DiningVenue[];
-    key: string;
+    key: FoodKey;
 };
 
 export const foodLocations: FoodLocation[] = [
@@ -152,11 +152,26 @@ export const foodLocations: FoodLocation[] = [
     },
 ];
 
-export const Food = memo(function Food({foodVisibility = {}, onMarkerFocus, zoom}: {foodVisibility?: Record<string, boolean>; onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom : number}) {
+const DEFAULT_FOOD_VISIBILITY: FoodVisibility = {
+    'F-1': true,
+    'F-2': true,
+    'F-3': true,
+    'F-4': true,
+    'F-5': true,
+    'F-6': true,
+};
+
+type FoodProps = {
+    foodVisibility?: FoodVisibility;
+    onMarkerFocus?: MarkerFocusHandler;
+    zoom: number;
+};
+
+export const Food = memo(function Food({foodVisibility = DEFAULT_FOOD_VISIBILITY, onMarkerFocus, zoom}: FoodProps) {
     return (
         <>
-            {foodLocations.filter((location) => foodVisibility[location.key] !== false && zoom >= minZoom).map((location: FoodLocation) => {
-                const position: [number, number] = [location.lat, -location.long];
+            {foodLocations.filter((location) => zoom >= minZoom && foodVisibility[location.key]).map((location: FoodLocation) => {
+                const position: MapPoint = [location.lat, -location.long];
 
                 return (
                 <Marker

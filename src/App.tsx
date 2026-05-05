@@ -3,24 +3,38 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { BusContext } from './components/bus.tsx';
-import { GetBusIcon } from './components/busMarkers.tsx';
-import { BusStop } from './components/busStop.tsx';
-import { CampusLoopRoute } from './components/routes/campusLoopRoute.tsx';
-import { DowntownLoopRoute } from './components/routes/downtownLoopRoute.tsx';
-import { WalmartTripRoute } from './components/routes/walmartTripRoute.tsx';
-import { Header } from './components/Header.js';
-import { SubHeader } from './components/SubHeader.js';
-import { Footer } from './components/Footer.js';
-import { Academic } from './components/Academic.tsx';
-import { Recreation } from './components/Recreation.tsx';
-import { Dorm } from './components/dorm.tsx';
-import { Food } from './components/food.tsx';
+import { BusContext } from './components/bus';
+import { GetBusIcon } from './components/busMarkers';
+import { BusStop } from './components/busStop';
+import { CampusLoopRoute } from './components/routes/campusLoopRoute';
+import { DowntownLoopRoute } from './components/routes/downtownLoopRoute';
+import { WalmartTripRoute } from './components/routes/walmartTripRoute';
+import { Header } from './components/Header';
+import { SubHeader } from './components/SubHeader';
+import { Footer } from './components/Footer';
+import { Academic } from './components/Academic';
+import { Recreation } from './components/Recreation';
+import { Dorm } from './components/dorm';
+import { Food } from './components/food';
 import { UserLocationMap } from './UserTracker';
-import { MapViewportController } from './components/MapViewportController.tsx';
-import { DEFAULT_BUS_STATUS_OPTIONS, DEFAULT_FOOD_OPTIONS } from './components/SubHeader.js';
+import { MapViewportController } from './components/MapViewportController';
+import { DEFAULT_BUS_STATUS_OPTIONS, DEFAULT_FOOD_OPTIONS } from './components/SubHeader';
+import type {
+  BusStatusCategory,
+  BusStatusVisibility,
+  LiveBus,
+  MapFocusTarget,
+  MapPoint,
+  MarkerFocusHandler,
+  RouteVisibility,
+  TrackingMode,
+} from './types/frontend';
 
-function MapExporter({ onMapReady }) {
+type MapExporterProps = {
+  onMapReady?: (map: L.Map | null) => void;
+};
+
+function MapExporter({ onMapReady }: MapExporterProps) {
   const map = useMap();
 
   useEffect(() => {
@@ -36,39 +50,43 @@ function MapExporter({ onMapReady }) {
   return null;
 }
 
-function ZoomListener({ setZoom }) {
-  useMapEvents({
-    zoomend: (event) => {
-      setZoom(event.target.getZoom());
+type ZoomListenerProps = {
+  setZoom: (zoom: number) => void;
+};
+
+function ZoomListener({ setZoom }: ZoomListenerProps) {
+  const map = useMapEvents({
+    zoomend: () => {
+      setZoom(map.getZoom());
     },
   });
 
   return null;
 }
 
-delete L.Icon.Default.prototype._getIconUrl;
+delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
   iconUrl: require('leaflet/dist/images/marker-icon.png'),
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const DEFAULT_ROUTE_VISIBILITY = {
+const DEFAULT_ROUTE_VISIBILITY: RouteVisibility = {
   campus: true,
   downtown: true,
   walmart: true,
 };
 
-const CAMPUS_CENTER = [41.012, -76.448];
+const CAMPUS_CENTER: MapPoint = [41.012, -76.448];
 const CAMPUS_ZOOM = 15.25;
 const BUS_MARKER_ANIMATION_MS = 240;
-const EMPTY_BUSES = [];
-const BLOOMSBURG_BOUNDS = [
+const EMPTY_BUSES: LiveBus[] = [];
+const BLOOMSBURG_BOUNDS: [MapPoint, MapPoint] = [
   [40.9850, -76.5050],
   [41.0300, -76.4300],
 ];
 
-function getBusIconName(heading) {
+function getBusIconName(heading: LiveBus['heading']): string {
   const normalizedHeading = ((Number(heading) || 0) % 360 + 360) % 360;
   if (normalizedHeading >= 315 || normalizedHeading < 45) return 'busIconNorth';
   if (normalizedHeading >= 45 && normalizedHeading < 135) return 'busIconEast';
@@ -76,7 +94,7 @@ function getBusIconName(heading) {
   return 'busIconWest';
 }
 
-function getDisplayBus(bus, trackingMode) {
+function getDisplayBus(bus: LiveBus, trackingMode: TrackingMode): LiveBus {
   if (trackingMode === 'ping') {
     return {
       ...bus,
@@ -100,10 +118,15 @@ function getDisplayBus(bus, trackingMode) {
   };
 }
 
-function DynamicBusMarker({ bus, onMarkerFocus }) {
-  const markerRef = useRef(null);
-  const animationRef = useRef(null);
-  const positionRef = useRef([Number(bus.lat), Number(bus.lng)]);
+type DynamicBusMarkerProps = {
+  bus: LiveBus;
+  onMarkerFocus?: MarkerFocusHandler;
+};
+
+function DynamicBusMarker({ bus, onMarkerFocus }: DynamicBusMarkerProps) {
+  const markerRef = useRef<L.Marker | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const positionRef = useRef<MapPoint>([Number(bus.lat), Number(bus.lng)]);
   const busIcon = useMemo(() => GetBusIcon(getBusIconName(bus.heading)), [bus.heading]);
 
   useEffect(() => () => {
@@ -141,7 +164,7 @@ function DynamicBusMarker({ bus, onMarkerFocus }) {
     }
 
     const startedAt = performance.now();
-    const animate = (now) => {
+    const animate = (now: number) => {
       const progress = Math.min(1, (now - startedAt) / BUS_MARKER_ANIMATION_MS);
       marker.setLatLng([
         startLat + ((nextLat - startLat) * progress),
@@ -212,33 +235,33 @@ function DynamicBusMarker({ bus, onMarkerFocus }) {
 }
 
 function App() {
-  const busContext = useContext(BusContext) || {};
-  const buses = Array.isArray(busContext.buses) ? busContext.buses : EMPTY_BUSES;
-  const connectionStatus = busContext.connectionStatus || 'Connecting...';
+  const busContext = useContext(BusContext);
+  const buses = busContext?.buses ?? EMPTY_BUSES;
+  const connectionStatus = busContext?.connectionStatus || 'Connecting...';
   const [showBuses, setShowBuses] = useState(true);
   const [showStops, setShowStops] = useState(true);
   const [showUserLocation, setShowUserLocation] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
-  const [routeVisibility, setRouteVisibility] = useState(DEFAULT_ROUTE_VISIBILITY);
-  const [busStatusVisibility, setBusStatusVisibility] = useState(DEFAULT_BUS_STATUS_OPTIONS);
-  const [trackingMode, setTrackingMode] = useState('ping');
+  const [routeVisibility, setRouteVisibility] = useState<RouteVisibility>(DEFAULT_ROUTE_VISIBILITY);
+  const [busStatusVisibility, setBusStatusVisibility] = useState<BusStatusVisibility>(DEFAULT_BUS_STATUS_OPTIONS);
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>('ping');
   const [zoom, setZoom] = useState(CAMPUS_ZOOM);
-  const [userPos, setUserPos] = useState(null);
-  const [focusTarget, setFocusTarget] = useState({
+  const [userPos, setUserPos] = useState<MapPoint | null>(null);
+  const [focusTarget, setFocusTarget] = useState<MapFocusTarget>({
     type: 'campus',
     center: CAMPUS_CENTER,
     zoom: CAMPUS_ZOOM,
   });
-  const mapRef = useRef(null);
+  const mapRef = useRef<L.Map | null>(null);
   const foodVisibility = DEFAULT_FOOD_OPTIONS;
 
   useEffect(() => {
     if (!navigator.geolocation || !showUserLocation) return undefined;
 
-    let lastPos = null;
+    let lastPos: MapPoint | null = null;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        const coords = [pos.coords.latitude, pos.coords.longitude];
+        const coords: MapPoint = [pos.coords.latitude, pos.coords.longitude];
         if (
           lastPos &&
           Math.abs(lastPos[0] - coords[0]) < 0.00005 &&
@@ -262,15 +285,15 @@ function App() {
   }, [showUserLocation]);
 
   useEffect(() => {
-    const handlePopupWheel = (event) => {
+    const handlePopupWheel = (event: WheelEvent) => {
       const target = event.target;
-      if (target?.closest?.('.leaflet-popup-content-wrapper')) {
+      if (target instanceof Element && target.closest('.leaflet-popup-content-wrapper')) {
         event.preventDefault();
         event.stopPropagation();
       }
     };
 
-    const handlePinchZoom = (event) => {
+    const handlePinchZoom = (event: TouchEvent) => {
       if (event.touches && event.touches.length > 1) {
         event.preventDefault();
       }
@@ -285,7 +308,7 @@ function App() {
     };
   }, []);
 
-  const getStatusCategory = useCallback((status) => {
+  const getStatusCategory = useCallback((status: LiveBus['status']): BusStatusCategory => {
     const normalized = String(status ?? '').trim().toLowerCase();
     if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
     if (normalized === 'idle' || normalized === 'idling') return 'idle';
@@ -301,11 +324,11 @@ function App() {
   const visibleBuses = useMemo(() => (
     displayBuses.filter((bus) => {
       const category = getStatusCategory(bus.status);
-      return !!busStatusVisibility[category];
+      return busStatusVisibility[category];
     })
   ), [busStatusVisibility, displayBuses, getStatusCategory]);
 
-  const handleMapReady = useCallback((map) => {
+  const handleMapReady = useCallback((map: L.Map | null) => {
     mapRef.current = map;
   }, []);
 
@@ -322,8 +345,8 @@ function App() {
     });
   }, []);
 
-  const handleMarkerFocus = useCallback((center, type = 'marker', targetZoom) => {
-    const nextCenter = [Number(center?.[0]), Number(center?.[1])];
+  const handleMarkerFocus = useCallback<MarkerFocusHandler>((center, type = 'marker', targetZoom) => {
+    const nextCenter: MapPoint = [Number(center[0]), Number(center[1])];
     if (!Number.isFinite(nextCenter[0]) || !Number.isFinite(nextCenter[1])) {
       return;
     }
@@ -372,8 +395,7 @@ function App() {
           <MapViewportController focusTarget={focusTarget} onResetFocus={handleCenterMap} />
           <TileLayer
             attribution='&copy; CNES, Distribution Airbus DS, &copy; Airbus DS, &copy; PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener noreferrer">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}"
-            ext="jpg"
+            url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg"
           />
           {showUserLocation && <UserLocationMap userPos={userPos} onMarkerFocus={handleMarkerFocus} />}
           {showBuses && busMarkers}

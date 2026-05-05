@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import '../styles/Header.css';
-import { busStopLibrary } from './busStop.tsx';
-import { dormLocations } from './dorm.tsx';
-import { academicBuildings } from './Academic.tsx';
-import { recreationLocations } from './Recreation.tsx';
-import { foodLocations } from './food.tsx';
+import { busStopLibrary } from './busStop';
+import { dormLocations } from './dorm';
+import { academicBuildings } from './Academic';
+import { recreationLocations } from './Recreation';
+import { foodLocations } from './food';
+import type { LiveBus, MapPoint, MarkerFocusHandler } from '../types/frontend';
 
-export function Header({ onMarkerFocus }) {
+type HeaderProps = {
+  buses?: LiveBus[];
+  connectionStatus?: string;
+  onMarkerFocus?: MarkerFocusHandler;
+};
+
+type SearchableCampusLocation = {
+  key: string;
+  name: string;
+  lat: number;
+  long: number;
+};
+
+export function Header({ onMarkerFocus }: HeaderProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [query, setQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
   const normalizedQuery = query.toLowerCase().trim();
-  const allFilteredItems = [
+  const allFilteredItems: SearchableCampusLocation[] = [
     ...busStopLibrary,
     ...dormLocations,
     ...academicBuildings,
@@ -21,7 +35,7 @@ export function Header({ onMarkerFocus }) {
     ...foodLocations,
   ].filter((loc) => loc.name.toLowerCase().includes(normalizedQuery));
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (showScheduleModal) {
       document.body.classList.add('modal-open');
     } else {
@@ -31,8 +45,8 @@ export function Header({ onMarkerFocus }) {
     return () => document.body.classList.remove('modal-open');
   }, [showScheduleModal]);
 
-  function handleSelectLocation(loc) {
-    const position = [loc.lat, -loc.long];
+  function handleSelectLocation(loc: SearchableCampusLocation) {
+    const position: MapPoint = [loc.lat, -loc.long];
 
     setQuery(loc.name);
     setShowDropdown(false);

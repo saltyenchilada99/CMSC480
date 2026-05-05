@@ -9,31 +9,52 @@
  * }
  */
 
+type ApiBus = {
+  id?: string | null;
+  name?: string | null;
+  lat?: number | string | null;
+  lng?: number | string | null;
+  heading?: number | string | null;
+  speed?: number | string | null;
+  status?: string | null;
+  lastUpdated?: string | null;
+  address?: string | null;
+  driver?: string | null;
+};
+
+type BusPosition = {
+  lat: number;
+  lng: number;
+};
+
 class Bus {
-  /**
-   * @param {Object} apiBus
-   */
-  constructor(apiBus = {}) {
-    this.id = "";
-    this.name = "";
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  heading: number;
+  speed: number;
+  status: string;
+  lastUpdated: string;
+  address: string | null;
+  driver: string | null;
+
+  constructor(apiBus: ApiBus = {}) {
+    this.id = '';
+    this.name = '';
     this.lat = 0;
     this.lng = 0;
     this.heading = 0;
     this.speed = 0;
-    this.status = "Unknown";
-    this.lastUpdated = "";
+    this.status = 'Unknown';
+    this.lastUpdated = '';
     this.address = null;
     this.driver = null;
 
     this.updateFromApi(apiBus);
   }
 
-  /**
-   * Update this bus with fresh API data.
-   * @param {Object} apiBus
-   * @returns {Bus}
-   */
-  updateFromApi(apiBus = {}) {
+  updateFromApi(apiBus: ApiBus = {}): Bus {
     this.id = apiBus.id ?? this.id;
     this.name = apiBus.name ?? this.name;
     this.lat = Number(apiBus.lat ?? this.lat ?? 0);
@@ -47,19 +68,11 @@ class Bus {
     return this;
   }
 
-  /**
-   * Convenience helper for Leaflet/Map marker positioning.
-   * @returns {{lat: number, lng: number}}
-   */
-  getPosition() {
+  getPosition(): BusPosition {
     return { lat: this.lat, lng: this.lng };
   }
 
-  /**
-   * Return plain JSON-friendly object.
-   * @returns {Object}
-   */
-  toJSON() {
+  toJSON(): Required<ApiBus> {
     return {
       id: this.id,
       name: this.name,
@@ -74,36 +87,18 @@ class Bus {
     };
   }
 
-  /**
-   * Build a Bus from one API bus payload.
-   * @param {Object} apiBus
-   * @returns {Bus}
-   */
-  static fromApi(apiBus) {
+  static fromApi(apiBus: ApiBus): Bus {
     return new Bus(apiBus);
   }
 
-  /**
-   * Convert API response bus array into Bus instances.
-   * @param {Object[]} apiBuses
-   * @returns {Bus[]}
-   */
-  static listFromApi(apiBuses = []) {
+  static listFromApi(apiBuses: ApiBus[] = []): Bus[] {
     if (!Array.isArray(apiBuses)) return [];
     return apiBuses.map((item) => Bus.fromApi(item));
   }
 
-  /**
-   * Update an in-memory bus map by ID using latest API list.
-   * Helpful for polling/WebSocket refreshes.
-   *
-   * @param {Map<string, Bus>} busMap
-   * @param {Object[]} apiBuses
-   * @returns {Map<string, Bus>}
-   */
-  static upsertIntoMap(busMap, apiBuses = []) {
+  static upsertIntoMap(busMap: Map<string, Bus>, apiBuses: ApiBus[] = []): Map<string, Bus> {
     if (!(busMap instanceof Map)) {
-      throw new Error("busMap must be a Map<string, Bus>");
+      throw new Error('busMap must be a Map<string, Bus>');
     }
 
     for (const apiBus of apiBuses) {
@@ -124,4 +119,3 @@ class Bus {
 
 export default Bus;
 export { Bus };
-

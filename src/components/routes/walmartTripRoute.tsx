@@ -1,4 +1,4 @@
-import { FileLayerRoute } from "./FileLayerRoute.tsx";
+import { FileLayerRoute } from './FileLayerRoute';
 
 export function WalmartTripRoute({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
     return (

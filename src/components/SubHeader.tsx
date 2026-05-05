@@ -1,54 +1,83 @@
-import React, { useState } from 'react';
+import { Fragment, useState, type ChangeEventHandler } from 'react';
 import '../styles/SubHeader.css';
 import busIcon from './bus_icon.png';
 import busStopIcon from './bus_stop_icon.png';
+import type {
+  BusStatusCategory,
+  BusStatusVisibility,
+  FoodVisibility,
+  LiveBus,
+  RouteKey,
+  RouteVisibility,
+  TrackingMode,
+} from '../types/frontend';
 
-const DEFAULT_OVERLAYS = {
+type OverlayKey = 'buses' | 'stops' | 'routes' | 'user';
+type OverlayVisibility = Record<OverlayKey, boolean>;
+
+type SubHeaderProps = {
+  buses?: LiveBus[];
+  connectionStatus?: string;
+  onBusesToggle?: (visible: boolean) => void;
+  onStopsToggle?: (visible: boolean) => void;
+  onRoutesToggle?: (visible: boolean) => void;
+  onRouteOptionsToggle?: (options: RouteVisibility) => void;
+  onCenterMap?: () => void;
+  onUserToggle?: (visible: boolean) => void;
+  onBusStatusOptionsToggle?: (options: BusStatusVisibility) => void;
+  onTrackingModeChange?: (mode: TrackingMode) => void;
+};
+
+const DEFAULT_OVERLAYS: OverlayVisibility = {
   buses: true,
   stops: true,
   routes: true,
   user: true,
 };
 
-const DEFAULT_TRACKING_MODE = 'ping';
+const DEFAULT_TRACKING_MODE: TrackingMode = 'ping';
 
-export const DEFAULT_BUS_STATUS_OPTIONS = {
+export const DEFAULT_BUS_STATUS_OPTIONS: BusStatusVisibility = {
   active: true,
   idle: true,
   stopped: false,
 };
 
-const BUS_STATUS_LABELS = {
+const BUS_STATUS_KEYS = Object.keys(DEFAULT_BUS_STATUS_OPTIONS) as BusStatusCategory[];
+
+const BUS_STATUS_LABELS: Record<BusStatusCategory, string> = {
   active: 'Active (Moving)',
   idle: 'Idle',
   stopped: 'Stopped',
 };
 
-const BUS_STATUS_COLORS = {
+const BUS_STATUS_COLORS: Record<BusStatusCategory, string> = {
   active: '#2e7d32',
   idle: '#f9a825',
   stopped: '#c62828',
 };
 
-const DEFAULT_ROUTE_OPTIONS = {
+const DEFAULT_ROUTE_OPTIONS: RouteVisibility = {
   campus: true,
   downtown: true,
   walmart: true,
 };
 
-const ROUTE_COLORS = {
+const ROUTE_KEYS = Object.keys(DEFAULT_ROUTE_OPTIONS) as RouteKey[];
+
+const ROUTE_COLORS: Record<RouteKey, string> = {
   campus: '#B8860B',
   downtown: '#6D0026',
   walmart: '#0057B8',
 };
 
-const ROUTE_LABELS = {
+const ROUTE_LABELS: Record<RouteKey, string> = {
   campus: 'Campus Loop',
   downtown: 'Downtown Loop',
   walmart: 'Walmart Trip',
 };
 
-export const DEFAULT_FOOD_OPTIONS = {
+export const DEFAULT_FOOD_OPTIONS: FoodVisibility = {
   'F-1': true,
   'F-2': true,
   'F-3': true,
@@ -79,7 +108,12 @@ function CenterMapIcon() {
   );
 }
 
-function Toggle({ checked, onChange }) {
+type ToggleProps = {
+  checked: boolean;
+  onChange: ChangeEventHandler<HTMLInputElement>;
+};
+
+function Toggle({ checked, onChange }: ToggleProps) {
   return (
     <label className="toggle-switch" onClick={(event) => event.stopPropagation()}>
       <input type="checkbox" checked={checked} onChange={onChange} />
@@ -99,7 +133,7 @@ export function SubHeader({
   onUserToggle,
   onBusStatusOptionsToggle,
   onTrackingModeChange,
-}) {
+}: SubHeaderProps) {
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [routeOptions, setRouteOptions] = useState(DEFAULT_ROUTE_OPTIONS);
   const [busStatusOptions, setBusStatusOptions] = useState(DEFAULT_BUS_STATUS_OPTIONS);
@@ -107,7 +141,7 @@ export function SubHeader({
   const [activeTab, setActiveTab] = useState('layers');
   const [panelOpen, setPanelOpen] = useState(true);
 
-  const syncMainBusesToggle = (nextOptions) => {
+  const syncMainBusesToggle = (nextOptions: BusStatusVisibility) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
       if (prev.buses === anyEnabled) return prev;
@@ -116,7 +150,7 @@ export function SubHeader({
     });
   };
 
-  const syncMainRoutesToggle = (nextOptions) => {
+  const syncMainRoutesToggle = (nextOptions: RouteVisibility) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
       if (prev.routes === anyEnabled) return prev;
@@ -125,15 +159,15 @@ export function SubHeader({
     });
   };
 
-  const handleToggle = (key) => {
+  const handleToggle = (key: OverlayKey) => {
     const next = { ...overlays, [key]: !overlays[key] };
     setOverlays(next);
 
     if (key === 'buses') {
       onBusesToggle?.(next.buses);
       const nextBusStatusOptions = Object.fromEntries(
-        Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => [statusKey, next.buses])
-      );
+        BUS_STATUS_KEYS.map((statusKey) => [statusKey, next.buses])
+      ) as BusStatusVisibility;
       setBusStatusOptions(nextBusStatusOptions);
       onBusStatusOptionsToggle?.(nextBusStatusOptions);
     }
@@ -144,21 +178,21 @@ export function SubHeader({
     if (key === 'routes') {
       onRoutesToggle?.(next.routes);
       const nextRouteOptions = Object.fromEntries(
-        Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => [routeKey, next.routes])
-      );
+        ROUTE_KEYS.map((routeKey) => [routeKey, next.routes])
+      ) as RouteVisibility;
       setRouteOptions(nextRouteOptions);
       onRouteOptionsToggle?.(nextRouteOptions);
     }
   };
 
-  const handleRouteOptionToggle = (routeKey) => {
+  const handleRouteOptionToggle = (routeKey: RouteKey) => {
     const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
     setRouteOptions(next);
     onRouteOptionsToggle?.(next);
     syncMainRoutesToggle(next);
   };
 
-  const handleBusStatusOptionToggle = (statusKey) => {
+  const handleBusStatusOptionToggle = (statusKey: BusStatusCategory) => {
     const next = { ...busStatusOptions, [statusKey]: !busStatusOptions[statusKey] };
     setBusStatusOptions(next);
     onBusStatusOptionsToggle?.(next);
@@ -177,20 +211,20 @@ export function SubHeader({
     onRouteOptionsToggle?.(DEFAULT_ROUTE_OPTIONS);
   };
 
-  const handleTrackingModeChange = (mode) => {
+  const handleTrackingModeChange = (mode: TrackingMode) => {
     setTrackingMode(mode);
     onTrackingModeChange?.(mode);
   };
 
-  const getStatusCategory = (status) => {
+  const getStatusCategory = (status: LiveBus['status']): BusStatusCategory => {
     const normalized = String(status ?? '').trim().toLowerCase();
     if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
     if (normalized === 'idle' || normalized === 'idling') return 'idle';
     return 'stopped';
   };
 
-  const getBusName = (bus, index) => bus.name || bus.id || `Bus ${index + 1}`;
-  const statusSortOrder = { active: 0, idle: 1, stopped: 2 };
+  const getBusName = (bus: LiveBus, index: number) => bus.name || bus.id || `Bus ${index + 1}`;
+  const statusSortOrder: Record<BusStatusCategory, number> = { active: 0, idle: 1, stopped: 2 };
   const sortedBuses = buses
     .map((bus, index) => ({
       bus,
@@ -204,7 +238,7 @@ export function SubHeader({
       a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
     ));
 
-  const layers = [
+  const layers: Array<{ key: Exclude<OverlayKey, 'buses'>; img?: string; icon?: string; label: string }> = [
     { key: 'stops', img: busStopIcon, label: 'Bus Stops' },
     { key: 'routes', icon: 'R', label: 'Routes' },
     { key: 'user', label: 'My Location' },
@@ -276,7 +310,7 @@ export function SubHeader({
             </div>
 
             <div className="route-suboptions bus-status-options">
-              {Object.keys(DEFAULT_BUS_STATUS_OPTIONS).map((statusKey) => (
+              {BUS_STATUS_KEYS.map((statusKey) => (
                 <label key={statusKey} className="route-suboption" onClick={(event) => event.stopPropagation()}>
                   <span className="route-dot" style={{ background: BUS_STATUS_COLORS[statusKey] }} />
                   <span className="route-suboption-label">{BUS_STATUS_LABELS[statusKey]}</span>
@@ -383,7 +417,7 @@ export function SubHeader({
           }
 
           return (
-            <React.Fragment key={key}>
+            <Fragment key={key}>
               <div className="layer-item" onClick={() => handleToggle(key)}>
                 <div className="layer-item-left">
                   {img
@@ -399,7 +433,7 @@ export function SubHeader({
 
               {key === 'routes' && (
                 <div className="route-suboptions">
-                  {Object.keys(DEFAULT_ROUTE_OPTIONS).map((routeKey) => (
+                  {ROUTE_KEYS.map((routeKey) => (
                     <label key={routeKey} className="route-suboption" onClick={(event) => event.stopPropagation()}>
                       <span className="route-dot" style={{ background: ROUTE_COLORS[routeKey] }} />
                       <span className="route-suboption-label">{ROUTE_LABELS[routeKey]}</span>
@@ -412,7 +446,7 @@ export function SubHeader({
                   ))}
                 </div>
               )}
-            </React.Fragment>
+            </Fragment>
           );
         })}
 
