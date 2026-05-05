@@ -5,14 +5,22 @@ import { GetFoodIcon } from './busMarkers';
 import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
 import type { FoodKey, FoodVisibility, MapPoint, MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
+/**
+ * Dining marker layer.
+ *
+ * Each location can contain multiple venues because several campus buildings
+ * house more than one dining option. The exported data also feeds search.
+ */
 const minZoom = 17;
 
+/** One dining vendor inside a campus food location. */
 type DiningVenue = {
     name: string;
     type: string;
     hours: string;
 };
 
+/** Map/search record for a campus dining location. */
 type FoodLocation = {
     name: string;
     lat: number;
@@ -22,6 +30,7 @@ type FoodLocation = {
     key: FoodKey;
 };
 
+/** Dining locations rendered on the map and indexed by search. */
 export const foodLocations: FoodLocation[] = [
     {
         name: "Scranton Commons",
@@ -154,6 +163,7 @@ export const foodLocations: FoodLocation[] = [
     },
 ];
 
+/** Default sidebar state: all dining markers are visible. */
 const DEFAULT_FOOD_VISIBILITY: FoodVisibility = {
     'F-1': true,
     'F-2': true,
@@ -170,6 +180,7 @@ type FoodProps = {
     zoom: number;
 };
 
+/** Renders visible dining markers when the map is close enough to campus. */
 export const Food = memo(function Food({foodVisibility = DEFAULT_FOOD_VISIBILITY, onMarkerFocus, selectedMarker, zoom}: FoodProps) {
     return (
         <>
@@ -191,6 +202,7 @@ export const Food = memo(function Food({foodVisibility = DEFAULT_FOOD_VISIBILITY
     );
 });
 
+/** Props for one dining marker and its popup. */
 type FoodMarkerProps = {
     icon: L.Icon | L.DivIcon;
     location: FoodLocation;
@@ -199,6 +211,7 @@ type FoodMarkerProps = {
     selectedMarker?: SelectedMarker;
 };
 
+/** Leaflet marker wrapper for one dining location popup. */
 function FoodMarker({
     icon,
     location,

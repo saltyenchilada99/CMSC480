@@ -6,6 +6,12 @@ import { MarkerPopupCard } from './MarkerPopupCard';
 import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
 import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
+/**
+ * Static recreation and athletics marker layer.
+ *
+ * The records below are shared by the visible Leaflet markers and the global
+ * search index, which keeps search results and marker popups in sync.
+ */
 type RecreationLocation = {
     name: string;
     lat: number;
@@ -24,8 +30,9 @@ type RecreationProps = {
     zoom: number;
 };
 
-const minZoom : number = 17;
+const minZoom: number = 17;
 
+/** Recreation locations shown on upper and lower campus. */
 export const recreationLocations: RecreationLocation[] = [{
     name: "Student Recreation Center",
     lat: 41.01097490879618,
@@ -120,6 +127,7 @@ export const recreationLocations: RecreationLocation[] = [{
     link: 'https://bloomsburgathletics.com/facilities/danny-litwhiler-field/6',
 }];
 
+/** Renders recreation markers once the map is zoomed in enough for details. */
 export const Recreation = memo(function Recreation({ onMarkerFocus, selectedMarker, zoom }: RecreationProps) {
     if (zoom < minZoom) return null;
 
@@ -143,6 +151,7 @@ export const Recreation = memo(function Recreation({ onMarkerFocus, selectedMark
     );
 });
 
+/** Props for one recreation marker and its search-controlled popup. */
 type RecreationMarkerProps = {
     icon: L.Icon | L.DivIcon;
     location: RecreationLocation;
@@ -151,6 +160,7 @@ type RecreationMarkerProps = {
     selectedMarker?: SelectedMarker;
 };
 
+/** Leaflet marker wrapper for a recreation location popup. */
 function RecreationMarker({
     icon,
     location,

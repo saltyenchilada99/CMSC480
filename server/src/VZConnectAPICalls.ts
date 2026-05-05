@@ -88,6 +88,8 @@ export interface VehicleLocation {
 /** Simplified vehicle status the Reveal API exposes */
 export type VehicleStatus = "Moving" | "Stopped" | "Idle" | "NoData" | "Unknown";
 
+const VEHICLE_STATUSES = new Set<VehicleStatus>(["Moving", "Stopped", "Idle", "NoData", "Unknown"]);
+
 /** Lightweight vehicle record returned by GET /cmd/v1/vehicles */
 export interface Vehicle {
     VehicleNumber: string;
@@ -257,6 +259,44 @@ function normalizeStatus(displayState: string): VehicleStatus {
     return 'Unknown';
 }
 
+/** Runtime guard for webhook status values before they enter app state. */
+function isVehicleStatus(value: unknown): value is VehicleStatus {
+    return typeof value === 'string' && VEHICLE_STATUSES.has(value as VehicleStatus);
+}
+
+/**
+ * Converts one raw webhook body item into a normalized plot.
+ *
+ * The webhook endpoint receives JSON from outside the React app, so it validates
+ * and normalizes the fields the backend requires before updating live buses.
+ */
+function normalizeWebhookPlot(raw: unknown): GpsWebhookPlot | null {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const plot = raw as Partial<GpsWebhookPlot>;
+    const latitude = Number(plot.Latitude);
+    const longitude = Number(plot.Longitude);
+
+    if (!plot.VehicleNumber || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+    }
+
+    const vehicleNumber = String(plot.VehicleNumber);
+    const heading = Number(plot.Heading);
+    const speed = Number(plot.Speed);
+
+    return {
+        VehicleNumber: vehicleNumber,
+        VehicleName: plot.VehicleName ? String(plot.VehicleName) : vehicleNumber,
+        Latitude: latitude,
+        Longitude: longitude,
+        Heading: Number.isFinite(heading) ? heading : 0,
+        Speed: Number.isFinite(speed) ? speed : 0,
+        Status: isVehicleStatus(plot.Status) ? plot.Status : "Unknown",
+        EventTime: plot.EventTime ? String(plot.EventTime) : new Date().toISOString(),
+    };
+}
+
 /**
  * Fetch the current location for every vehicle in the provided list in parallel.
  * Falls back gracefully – a single vehicle failure won't crash the whole poll.
@@ -364,14 +404,12 @@ export function gpsWebhookHandler(
 ): RequestHandler {
     return (req: Request, res: Response): void => {
         try {
-            // The body can be a single plot object or an array
-            const raw   = req.body;
-            const plots: GpsWebhookPlot[] = Array.isArray(raw) ? raw : [raw];
-
-            // Basic sanity check – real payloads always have Latitude/Longitude
-            const valid = plots.filter(
-                () => true
-            );
+            // The body can be a single plot object or an array.
+            const raw = req.body;
+            const plots = Array.isArray(raw) ? raw : [raw];
+            const valid = plots
+                .map(normalizeWebhookPlot)
+                .filter((plot): plot is GpsWebhookPlot => plot !== null);
 
             if (valid.length === 0) {
                 res.status(400).json({ error: "No valid GPS plots in payload." });

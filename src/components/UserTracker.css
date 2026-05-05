@@ -1,3 +1,9 @@
+/*
+ * Optional pulsing halo for the user-location marker.
+ *
+ * The marker itself is rendered in UserTracker.tsx; this file only owns the
+ * small SVG-radius animation used when the halo class is present.
+ */
 .user-location-halo {
     animation: userPulse 2s infinite ease-out;
 }

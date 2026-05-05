@@ -1,3 +1,11 @@
+/**
+ * Floating map control panel.
+ *
+ * The panel keeps its own UI state for tabs and toggles, then reports the
+ * resulting visibility choices to `App`. This keeps map rendering centralized
+ * while letting the panel feel responsive and self-contained.
+ */
+
 import { Fragment, useState, type ChangeEventHandler } from 'react';
 import '../styles/SubHeader.css';
 import busIcon from './bus_icon.png';
@@ -35,8 +43,10 @@ const DEFAULT_OVERLAYS: OverlayVisibility = {
   user: true,
 };
 
+/** Fluid is the normal user-facing mode; ping is retained as a raw-data view. */
 const DEFAULT_TRACKING_MODE: TrackingMode = 'fluid';
 
+/** Initial bus status filters shown when the app starts. */
 export const DEFAULT_BUS_STATUS_OPTIONS: BusStatusVisibility = {
   active: true,
   idle: true,
@@ -86,6 +96,7 @@ export const DEFAULT_FOOD_OPTIONS: FoodVisibility = {
   'F-6': true,
 };
 
+/** Small inline icon used for the geolocation layer toggle. */
 function LocationButtonIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -95,6 +106,7 @@ function LocationButtonIcon() {
   );
 }
 
+/** Small inline icon used by the "Center Map" control. */
 function CenterMapIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -122,6 +134,7 @@ function Toggle({ checked, onChange }: ToggleProps) {
   );
 }
 
+/** Renders all user-facing map controls for layers, routes, buses, and reset. */
 export function SubHeader({
   buses = [],
   connectionStatus = 'Offline',
@@ -141,6 +154,7 @@ export function SubHeader({
   const [activeTab, setActiveTab] = useState('layers');
   const [panelOpen, setPanelOpen] = useState(true);
 
+  /** Turn the parent "Buses" switch on/off when all status filters change. */
   const syncMainBusesToggle = (nextOptions: BusStatusVisibility) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
@@ -150,6 +164,7 @@ export function SubHeader({
     });
   };
 
+  /** Turn the parent "Routes" switch on/off when all route filters change. */
   const syncMainRoutesToggle = (nextOptions: RouteVisibility) => {
     const anyEnabled = Object.values(nextOptions).some(Boolean);
     setOverlays((prev) => {
@@ -159,6 +174,7 @@ export function SubHeader({
     });
   };
 
+  /** Toggle a top-level overlay and keep any child filters synchronized. */
   const handleToggle = (key: OverlayKey) => {
     const next = { ...overlays, [key]: !overlays[key] };
     setOverlays(next);
@@ -185,6 +201,7 @@ export function SubHeader({
     }
   };
 
+  /** Toggle one route while preserving the other route selections. */
   const handleRouteOptionToggle = (routeKey: RouteKey) => {
     const next = { ...routeOptions, [routeKey]: !routeOptions[routeKey] };
     setRouteOptions(next);
@@ -192,6 +209,7 @@ export function SubHeader({
     syncMainRoutesToggle(next);
   };
 
+  /** Toggle one bus status category and notify the map filter in `App`. */
   const handleBusStatusOptionToggle = (statusKey: BusStatusCategory) => {
     const next = { ...busStatusOptions, [statusKey]: !busStatusOptions[statusKey] };
     setBusStatusOptions(next);
@@ -199,6 +217,7 @@ export function SubHeader({
     syncMainBusesToggle(next);
   };
 
+  /** Reset only layer-style controls, leaving bus tracking mode untouched. */
   const handleReset = () => {
     setOverlays((prev) => ({
       ...prev,
@@ -211,11 +230,13 @@ export function SubHeader({
     onRouteOptionsToggle?.(DEFAULT_ROUTE_OPTIONS);
   };
 
+  /** Switch between smoothed display coordinates and raw provider pings. */
   const handleTrackingModeChange = (mode: TrackingMode) => {
     setTrackingMode(mode);
     onTrackingModeChange?.(mode);
   };
 
+  /** Match backend/provider status strings to the UI's three status colors. */
   const getStatusCategory = (status: LiveBus['status']): BusStatusCategory => {
     const normalized = String(status ?? '').trim().toLowerCase();
     if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
@@ -224,6 +245,7 @@ export function SubHeader({
   };
 
   const getBusName = (bus: LiveBus, index: number) => bus.name || bus.id || `Bus ${index + 1}`;
+  /** Secondary text for each bus row avoids speed/heading, which can be stale. */
   const getBusMeta = (bus: LiveBus) => {
     const routeName = bus.routeName?.trim();
     if (routeName) return routeName;

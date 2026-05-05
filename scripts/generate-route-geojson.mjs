@@ -1,7 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 
+/**
+ * Route GeoJSON generator.
+ *
+ * This one-off utility rebuilds public/routes/*.geojson from known campus stop
+ * coordinates plus OSRM routing. The backend and frontend both consume those
+ * generated files, so keeping this script documented makes route maintenance
+ * reproducible for future reviewers.
+ */
+
 const routesDir = new URL("../public/routes/", import.meta.url);
 
+/** Wraps a route coordinate list in a minimal GeoJSON FeatureCollection. */
 function toFeatureCollection(name, routeCoords) {
   return {
     type: "FeatureCollection",
@@ -18,6 +28,7 @@ function toFeatureCollection(name, routeCoords) {
   };
 }
 
+/** Requests an OSRM walking route through ordered stops and returns lat/lng pairs. */
 async function fetchOsrmRoute(stops) {
   const coordString = stops.map(([lat, lng]) => `${lng},${lat}`).join(";");
   const url = `https://router.project-osrm.org/route/v1/foot/${coordString}?overview=full&geometries=geojson`;
@@ -36,6 +47,7 @@ async function fetchOsrmRoute(stops) {
   return json.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
 }
 
+/** Writes one generated route file into public/routes/. */
 async function writeRoute(filename, name, coords) {
   await writeFile(
     new URL(filename, routesDir),
@@ -43,6 +55,8 @@ async function writeRoute(filename, name, coords) {
   );
 }
 
+// Hand-tuned campus points are used where parking-lot geometry matters more
+// than OSRM's public-road routing.
 const lowerLoopStart = [41.00864, -76.44540];
 const lowerLoopConnector = [41.00880, -76.44506];
 

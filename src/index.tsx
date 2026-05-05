@@ -4,6 +4,12 @@ import './index.css';
 import App from './App';
 import { BusProvider } from './components/bus';
 
+/**
+ * React application entrypoint.
+ *
+ * BusProvider is mounted at the root so every map/sidebar component can read
+ * live WebSocket bus data without prop-drilling through unrelated components.
+ */
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {

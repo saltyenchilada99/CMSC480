@@ -1,4 +1,9 @@
-/* Footer — compact single-row bar */
+/*
+ * Compact footer styles.
+ *
+ * The map is the primary experience, so the footer defaults to a one-row bar
+ * and expands only when the user asks for institutional links.
+ */
 .app-footer {
   background: #111827;
   color: #9ca3af;

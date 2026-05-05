@@ -1,6 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Header } from './Header';
 
+/**
+ * Search regression test.
+ *
+ * Nelson Field House exists as both an athletic venue and a bus stop; the
+ * header should merge that into one search result and focus the preferred pin.
+ */
 jest.mock('./busStop', () => ({
   busStopLibrary: [{
     key: 'BS-3',

@@ -1,3 +1,11 @@
+/**
+ * Opens a marker popup after a search/focus action.
+ *
+ * React state can request a popup before Leaflet finishes panning or zooming.
+ * This hook waits until the map is near the target, then opens the popup with a
+ * timeout fallback so repeated searches stay reliable.
+ */
+
 import { useEffect, type RefObject } from 'react';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
@@ -16,6 +24,7 @@ const MARKER_READY_DISTANCE_PIXELS = 32;
 const OPEN_AFTER_MOVE_DELAY_MS = 80;
 const FALLBACK_OPEN_DELAY_MS = 760;
 
+/** Attach to a marker component that should react to `selectedMarker` changes. */
 export function useSelectedMarkerPopup({
   markerRef,
   markerKey,

@@ -1,3 +1,10 @@
+/**
+ * Shared card layout for campus point-of-interest popups.
+ *
+ * Academic, housing, and recreation markers share this component so their
+ * popups have consistent headings, tags, highlights, and external links.
+ */
+
 type MarkerPopupCardProps = {
     theme: 'academic' | 'housing' | 'recreation';
     label: string;
@@ -9,6 +16,7 @@ type MarkerPopupCardProps = {
     linkLabel?: string;
 };
 
+/** Render a themed informational popup card for a static campus location. */
 export function MarkerPopupCard({
     theme,
     label,

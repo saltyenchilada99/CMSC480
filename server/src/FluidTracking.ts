@@ -1,6 +1,16 @@
 import { BusRoute, findBestMatchingRoute, LatLng } from './BusRoute';
 import { VehicleLocation } from './VZConnectAPICalls';
 
+/**
+ * Server-side fluid tracking engine.
+ *
+ * Verizon Connect updates arrive in bursts rather than animation frames. This
+ * engine keeps a short history per bus, chooses an adaptive playback delay based
+ * on the actual update cadence, and returns interpolated display locations for
+ * the WebSocket broadcaster.
+ */
+
+/** Internal timestamped sample used for interpolation and route locking. */
 interface BusSample {
     timestampMs: number;
     receivedAtMs: number;
@@ -12,17 +22,27 @@ interface BusSample {
     distanceToRouteMeters?: number;
 }
 
+/** Tuning options for smoothing, sample retention, and route lock behavior. */
 export interface FluidTrackingOptions {
+    /** Fallback delay used before enough samples exist to learn update cadence. */
     delayMs?: number;
+    /** Maximum sample age retained per bus. */
     maxSampleAgeMs?: number;
+    /** Allowed provider clock skew before a sample is treated as current time. */
     maxFutureSkewMs?: number;
+    /** Distance from a route where a bus can first lock to that route. */
     routeCaptureDistanceMeters?: number;
+    /** Distance from a route where an already-locked bus is released. */
     routeReleaseDistanceMeters?: number;
+    /** Extra buffer added to the latest update interval for smoother playback. */
     adaptiveDelayBufferMs?: number;
+    /** Lower bound for adaptive smoothing delay. */
     minAdaptiveDelayMs?: number;
+    /** Upper bound for adaptive smoothing delay. */
     maxAdaptiveDelayMs?: number;
 }
 
+/** Last good emitted point, used to avoid disappearing markers during gaps. */
 type LastDisplayLocation = {
     location: VehicleLocation;
     emittedAtMs: number;
@@ -30,6 +50,9 @@ type LastDisplayLocation = {
 
 const MIN_MOVING_SAMPLE_DISTANCE_METERS = 6;
 
+/**
+ * Maintains per-bus histories and produces route-aware display locations.
+ */
 export class FluidTrackingEngine {
     private readonly routes: BusRoute[];
     private readonly routeByName: Map<string, BusRoute>;
@@ -44,6 +67,7 @@ export class FluidTrackingEngine {
     private readonly historyByBus = new Map<string, BusSample[]>();
     private readonly lastDisplayByBus = new Map<string, LastDisplayLocation>();
 
+    /** Creates an engine with route definitions and smoothing options. */
     constructor(routes: BusRoute[], options: FluidTrackingOptions = {}) {
         this.routes = routes;
         // Route lookup is hot during interpolation; cache by name once.
@@ -61,6 +85,7 @@ export class FluidTrackingEngine {
         );
     }
 
+    /** Adds the newest raw GPS locations to each bus history. */
     ingestLocations(locations: VehicleLocation[]): void {
         const now = Date.now();
         for (const location of locations) {
@@ -82,9 +107,6 @@ export class FluidTrackingEngine {
                 timestamp = now;
             }
 
-            // Some providers can repeat stale/non-advancing source timestamps even when
-            // new samples arrive. Ensure monotonic internal timestamps so interpolation
-            // can still progress smoothly over time.
             // Keep interpolation time tied to server ingest cadence (when samples
             // actually arrive), while still preserving provider time on payloads.
             // This avoids long pauses followed by rapid jumps when provider
@@ -169,6 +191,12 @@ export class FluidTrackingEngine {
         }
     }
 
+    /**
+     * Parses provider timestamps defensively.
+     *
+     * Verizon payloads may include timezone-qualified ISO strings or local-looking
+     * timestamps, so this chooses the interpretation nearest the server clock.
+     */
     private parseProviderTimestamp(value: string, nowMs: number): number {
         if (!value) return NaN;
 
@@ -198,6 +226,7 @@ export class FluidTrackingEngine {
         return NaN;
     }
 
+    /** Returns the current smoothed bus locations for REST/WebSocket clients. */
     getDisplayLocations(nowMs = Date.now()): VehicleLocation[] {
         const smoothed: VehicleLocation[] = [];
 
@@ -245,6 +274,7 @@ export class FluidTrackingEngine {
         return smoothed;
     }
 
+    /** Locates the two samples surrounding the target playback timestamp. */
     private findBracketSamples(samples: BusSample[], targetTs: number): { prev: BusSample; next: BusSample } | null {
         if (samples.length === 0) return null;
         if (samples.length === 1) return { prev: samples[0], next: samples[0] };
@@ -275,6 +305,7 @@ export class FluidTrackingEngine {
         return { prev, next };
     }
 
+    /** Interpolates between two samples, preferring route progress when possible. */
     private interpolateSamples(prev: BusSample, next: BusSample, ratio: number, displayTs: number): VehicleLocation {
         const routeMatch = this.getRouteInterpolationMatch(prev, next);
         let latitude = prev.location.Latitude + (next.location.Latitude - prev.location.Latitude) * ratio;
@@ -319,6 +350,7 @@ export class FluidTrackingEngine {
         };
     }
 
+    /** Chooses a shared route for route-locked interpolation between samples. */
     private getRouteInterpolationMatch(
         prev: BusSample,
         next: BusSample
@@ -350,6 +382,7 @@ export class FluidTrackingEngine {
         return null;
     }
 
+    /** Returns a sample's progress on the route, re-projecting if cached data is stale. */
     private getSampleProjectionOnRoute(
         sample: BusSample,
         route: BusRoute
@@ -381,6 +414,7 @@ export class FluidTrackingEngine {
         };
     }
 
+    /** Converts one sample into a client-facing location without interpolation. */
     private sampleToDisplayLocation(sample: BusSample, displayTs: number, source: BusSample): VehicleLocation {
         return {
             ...sample.location,
@@ -396,6 +430,7 @@ export class FluidTrackingEngine {
         };
     }
 
+    /** Computes the shortest signed route-progress delta, including loop wraparound. */
     private resolveRouteDeltaMeters(
         start: number,
         end: number,
@@ -418,6 +453,7 @@ export class FluidTrackingEngine {
         return delta;
     }
 
+    /** Uses the latest observed ingest interval as the smoothing window. */
     private computeEffectiveDelayMs(samples: BusSample[]): number {
         const intervals: number[] = [];
         for (let i = 1; i < samples.length; i += 1) {
@@ -435,6 +471,7 @@ export class FluidTrackingEngine {
         return this.clampDelayMs(latestIntervalMs + this.adaptiveDelayBufferMs);
     }
 
+    /** Interpolates headings through the shortest angular path. */
     private interpolateAngle(startDeg: number, endDeg: number, ratio: number): number {
         const a = ((startDeg % 360) + 360) % 360;
         const b = ((endDeg % 360) + 360) % 360;
@@ -444,6 +481,7 @@ export class FluidTrackingEngine {
         return (a + delta * ratio + 360) % 360;
     }
 
+    /** Keeps adaptive delays inside configured bounds. */
     private clampDelayMs(value: number): number {
         if (!Number.isFinite(value)) {
             return this.minAdaptiveDelayMs;
@@ -452,6 +490,7 @@ export class FluidTrackingEngine {
         return Math.max(this.minAdaptiveDelayMs, Math.min(this.maxAdaptiveDelayMs, value));
     }
 
+    /** Marks a bus as Moving when its GPS samples show meaningful movement. */
     private getDisplayStatus(
         providerStatus: VehicleLocation['Status'],
         previous: BusSample | undefined,
@@ -474,6 +513,7 @@ export class FluidTrackingEngine {
         return providerStatus;
     }
 
+    /** Measures sample-to-sample movement, preferring route progress when locked. */
     private getSampleMovementMeters(previous: BusSample, current: BusSample): number {
         if (
             previous.routeName &&
@@ -497,6 +537,7 @@ export class FluidTrackingEngine {
         );
     }
 
+    /** Haversine distance helper for movement checks outside route lock. */
     private distanceMeters(a: LatLng, b: LatLng): number {
         const earthRadiusMeters = 6_371_000;
         const toRadians = (value: number) => (value * Math.PI) / 180;
@@ -511,6 +552,7 @@ export class FluidTrackingEngine {
         return 2 * earthRadiusMeters * Math.asin(Math.sqrt(h));
     }
 
+    /** Removes old samples so histories stay bounded over long server runs. */
     private pruneExpiredSamples(samples: BusSample[], nowMs: number): void {
         const minAllowedTs = nowMs - this.maxSampleAgeMs;
         let firstValidIndex = 0;
@@ -522,6 +564,7 @@ export class FluidTrackingEngine {
         }
     }
 
+    /** Returns the last good point briefly when interpolation cannot emit one. */
     private getRecentDisplayFallback(busId: string, nowMs: number): VehicleLocation | null {
         const fallback = this.lastDisplayByBus.get(busId);
         if (!fallback) return null;
@@ -533,6 +576,7 @@ export class FluidTrackingEngine {
         return fallback.location;
     }
 
+    /** Basic coordinate sanity check before exposing a location to clients. */
     private isValidLocation(location: VehicleLocation): boolean {
         return Number.isFinite(location.Latitude) && Number.isFinite(location.Longitude);
     }

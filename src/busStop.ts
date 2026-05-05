@@ -1,20 +1,18 @@
 /**
- * Campus Loop Stops (Name -> Earth Coordinates)
- * Library -> 41.008674, -76.445245
- * Mccormic -> 41.009118, -76.447059
- * Nelson Field -> 41.015415, -76.450112
- * Montgomery Place Apts -> 41.014352, -76.446527
- * Mt Olympus Apts -> 41.016437, -76.445937
- * Orange Lot -> 41.018184, -76.448860
- * Stadium -> 41.017498, -76.450388
- * JKA Apts -> 41.017353, -76.453079
+ * Legacy bus-stop model for the Campus Loop schedule.
+ *
+ * The visible map markers live in src/components/busStop.tsx. This file keeps
+ * a small class-based representation that can be reused for schedule-focused
+ * experiments, tests, or command-line output.
  */
 
+/** Geographic coordinate pair in conventional latitude/longitude order. */
 type Coordinates = {
   latitude: number;
   longitude: number;
 };
 
+/** Human-readable service window for one route and day grouping. */
 type ServiceWindow = {
   day: string;
   hours: string;
@@ -22,6 +20,7 @@ type ServiceWindow = {
   notes?: string;
 };
 
+/** Class wrapper around one scheduled Campus Loop stop. */
 class BusStop {
   id: string;
   name: string;
@@ -44,19 +43,23 @@ class BusStop {
     this.serviceWindows = serviceWindows;
   }
 
+  /** Returns a compact label suitable for logs or simple lists. */
   getLabel(): string {
     return `${this.id} - ${this.name}`;
   }
 
+  /** Returns the stop coordinates as display text. */
   getLocationString(): string {
     return `${this.coordinates.latitude}, ${this.coordinates.longitude}`;
   }
 
+  /** Prints a one-line summary of the stop for quick debugging. */
   printStopInfo(): void {
     console.log(`${this.getLabel()} (${this.getLocationString()})`);
   }
 }
 
+/** Published Campus Loop operating windows. */
 const campusLoopSchedule: ServiceWindow[] = [
   {
     day: "Monday-Friday",
@@ -79,11 +82,11 @@ const campusLoopSchedule: ServiceWindow[] = [
   },
 ];
 
-// main: initialize bus stop objects
-function main(): BusStop[] {
-  const busStops: BusStop[] = [
+/** Builds the class-based Campus Loop stop list without import-time logging. */
+function buildCampusLoopStops(): BusStop[] {
+  return [
     new BusStop("BS-001", "Library", 41.008674, -76.445245, "Campus Loop", campusLoopSchedule),
-    new BusStop("BS-002", "Mccormic", 41.009118, -76.447059, "Campus Loop", campusLoopSchedule),
+    new BusStop("BS-002", "McCormick", 41.009118, -76.447059, "Campus Loop", campusLoopSchedule),
     new BusStop("BS-003", "Nelson Field", 41.015415, -76.450112, "Campus Loop", campusLoopSchedule),
     new BusStop("BS-004", "Montgomery Place Apts", 41.014352, -76.446527, "Campus Loop", campusLoopSchedule),
     new BusStop("BS-005", "Mt Olympus Apts", 41.016437, -76.445937, "Campus Loop", campusLoopSchedule),
@@ -91,11 +94,9 @@ function main(): BusStop[] {
     new BusStop("BS-007", "Stadium", 41.017498, -76.450388, "Campus Loop", campusLoopSchedule),
     new BusStop("BS-008", "JKA Apts", 41.017353, -76.453079, "Campus Loop", campusLoopSchedule),
   ];
-
-  busStops.forEach((stop) => stop.printStopInfo());
-  return busStops;
 }
 
-const campusLoopStops = main();
+/** Prebuilt Campus Loop stops exported for consumers that want the class form. */
+const campusLoopStops = buildCampusLoopStops();
 
 export { BusStop, campusLoopSchedule, campusLoopStops };

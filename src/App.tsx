@@ -1,3 +1,12 @@
+/**
+ * Main React application shell.
+ *
+ * This file coordinates the map experience: live buses, campus markers, route
+ * overlays, search focus, selected popups, user location, and layer visibility.
+ * Most visual details live in smaller components; `App` owns the shared state
+ * those components need to stay synchronized.
+ */
+
 import './App.css';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
@@ -35,6 +44,10 @@ type MapExporterProps = {
   onMapReady?: (map: L.Map | null) => void;
 };
 
+/**
+ * Exposes the Leaflet map instance to React state and to `window.__MAP__` for
+ * local debugging from the browser console.
+ */
 function MapExporter({ onMapReady }: MapExporterProps) {
   const map = useMap();
 
@@ -55,6 +68,7 @@ type ZoomListenerProps = {
   setZoom: (zoom: number) => void;
 };
 
+/** Keeps React aware of the current Leaflet zoom so marker layers can hide/show. */
 function ZoomListener({ setZoom }: ZoomListenerProps) {
   const map = useMapEvents({
     zoomend: () => {
@@ -86,6 +100,12 @@ const BLOOMSBURG_BOUNDS: [MapPoint, MapPoint] = [
   [41.0450, -76.4050],
 ];
 
+/**
+ * Selects the bus coordinate set for the current tracking mode.
+ *
+ * The backend sends both raw provider pings and smoothed fluid positions. This
+ * mapper keeps the rest of the UI reading ordinary `lat`/`lng`/`status` fields.
+ */
 function getDisplayBus(bus: LiveBus, trackingMode: TrackingMode): LiveBus {
   if (trackingMode === 'ping') {
     return {
@@ -115,6 +135,7 @@ type DynamicBusMarkerProps = {
   onMarkerFocus?: MarkerFocusHandler;
 };
 
+/** Renders one live bus marker using movement-derived directional artwork. */
 function DynamicBusMarker({ bus, onMarkerFocus }: DynamicBusMarkerProps) {
   const lat = Number(bus.lat);
   const lng = Number(bus.lng);
@@ -192,6 +213,7 @@ function App() {
   const markerRequestIdRef = useRef(0);
   const foodVisibility = DEFAULT_FOOD_OPTIONS;
 
+  /** Track browser geolocation only while the user-location layer is enabled. */
   useEffect(() => {
     if (!navigator.geolocation || !showUserLocation) return undefined;
 
@@ -221,6 +243,11 @@ function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [showUserLocation]);
 
+  /**
+   * Leaflet popups are inside the map container. These listeners keep mouse
+   * wheels and pinch gestures from accidentally zooming the whole map while a
+   * user is interacting with popup content.
+   */
   useEffect(() => {
     const handlePopupWheel = (event: WheelEvent) => {
       const target = event.target;
@@ -245,6 +272,7 @@ function App() {
     };
   }, []);
 
+  /** Normalize provider/backend status strings into the three UI filter groups. */
   const getStatusCategory = useCallback((status: LiveBus['status']): BusStatusCategory => {
     const normalized = String(status ?? '').trim().toLowerCase();
     if (normalized === 'moving' || normalized === 'move' || normalized === 'active') return 'active';
@@ -258,6 +286,7 @@ function App() {
       .filter((bus) => Number.isFinite(Number(bus.lat)) && Number.isFinite(Number(bus.lng)))
   ), [buses, trackingMode]);
 
+  /** Apply the status checkboxes after selecting ping or fluid coordinates. */
   const visibleBuses = useMemo(() => (
     displayBuses.filter((bus) => {
       const category = getStatusCategory(bus.status);
@@ -287,6 +316,13 @@ function App() {
     });
   }, []);
 
+  /**
+   * Shared focus handler for every marker/search result.
+   *
+   * `markerKey` identifies campus markers whose popups should open after the
+   * camera finishes moving. Bus markers do not use keys because their positions
+   * update continuously.
+   */
   const handleMarkerFocus = useCallback<MarkerFocusHandler>((center, type = 'marker', targetZoom, markerKey) => {
     const nextCenter: MapPoint = [Number(center[0]), Number(center[1])];
     if (!Number.isFinite(nextCenter[0]) || !Number.isFinite(nextCenter[1])) {

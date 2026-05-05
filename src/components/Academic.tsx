@@ -6,8 +6,16 @@ import { MarkerPopupCard } from './MarkerPopupCard';
 import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
 import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
-const minZoom : number = 17;
+/**
+ * Static academic-building marker layer.
+ *
+ * This file intentionally keeps the location metadata close to the marker
+ * rendering code because the same records power map markers, search results,
+ * and popup content.
+ */
+const minZoom: number = 17;
 
+/** Descriptive data required to render one academic campus marker. */
 type AcademicBuilding = {
     name: string;
     lat: number;
@@ -26,6 +34,7 @@ type AcademicProps = {
     zoom: number;
 };
 
+/** Academic buildings shown on the map and indexed by the global search box. */
 export const academicBuildings: AcademicBuilding[] = [{
     name: "Arts & Administration Building",
     lat: 41.00827,
@@ -182,6 +191,10 @@ export const academicBuildings: AcademicBuilding[] = [{
     link: 'https://www.commonwealthu.edu/offices-directory/arts-bloom/facilities/gallery-greenly-center',
 }];
 
+/**
+ * Renders academic markers only at close campus zoom levels so the base map
+ * stays readable when the user is zoomed out.
+ */
 export const Academic = memo(function Academic({ onMarkerFocus, selectedMarker, zoom }: AcademicProps) {
     const academicIcon = GetAcademicIcon();
 
@@ -207,6 +220,7 @@ export const Academic = memo(function Academic({ onMarkerFocus, selectedMarker, 
     );
 });
 
+/** Props for an individual academic marker with a stable Leaflet ref. */
 type AcademicMarkerProps = {
     academic: AcademicBuilding;
     icon: L.Icon | L.DivIcon;
@@ -215,6 +229,10 @@ type AcademicMarkerProps = {
     selectedMarker?: SelectedMarker;
 };
 
+/**
+ * Owns one Leaflet marker and its popup. Search selections flow through
+ * useSelectedMarkerPopup, which opens this marker after the camera settles.
+ */
 function AcademicMarker({
     academic,
     icon,

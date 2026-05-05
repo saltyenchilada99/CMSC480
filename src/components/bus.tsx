@@ -1,3 +1,11 @@
+/**
+ * Live bus data provider and optional marker renderer.
+ *
+ * `BusProvider` is the single frontend WebSocket client. It receives smoothed
+ * bus payloads from the backend and exposes them through React context so the
+ * rest of the app does not need to know about socket connection details.
+ */
+
 import { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -29,6 +37,7 @@ function isLocationUpdateMessage(data: unknown): data is LocationUpdateMessage {
 
 export const BusContext = createContext<BusContextValue | null>(null);
 
+/** Opens the live WebSocket feed and stores the latest bus array in context. */
 export function BusProvider({ children }: BusProviderProps) {
   const WS_URL = 'ws://localhost:3001';
   const [buses, setBuses] = useState<LiveBus[]>([]);
@@ -36,6 +45,7 @@ export function BusProvider({ children }: BusProviderProps) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    /** Create a socket and recursively reconnect after unexpected closes. */
     function connect() {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
@@ -143,6 +153,13 @@ function LiveBusMarker({ bus, onMarkerFocus }: LiveBusMarkerProps) {
   );
 }
 
+/**
+ * Standalone bus marker layer.
+ *
+ * `App.tsx` currently renders its own live markers because it also controls
+ * tracking modes and status filters. This component remains useful for tests
+ * or future pages that only need to render the current bus context.
+ */
 export const Bus = memo(function Bus({
   buses: busesProp,
   onMarkerFocus,

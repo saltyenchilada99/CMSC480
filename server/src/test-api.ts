@@ -1,8 +1,8 @@
 /**
- * test-api.ts
- * Test script to verify Verizon Connect API connectivity
+ * Verizon Connect API connectivity script.
  *
- * Run with: npm run test-api
+ * Run with `npm run test-api` from the server directory to confirm credentials,
+ * vehicle metadata, and recent GPS data before debugging the React map.
  */
 
 import 'dotenv/config';
@@ -13,7 +13,7 @@ import {
     VehicleLocation
 } from './VZConnectAPICalls';
 
-// ANSI color codes for pretty output
+/** ANSI color codes keep terminal output readable during setup demos. */
 const colors = {
     reset: '\x1b[0m',
     green: '\x1b[32m',
@@ -24,22 +24,27 @@ const colors = {
     bold: '\x1b[1m'
 };
 
+/** Prints a successful check line. */
 function success(message: string): void {
     console.log(`${colors.green}✓${colors.reset} ${message}`);
 }
 
+/** Prints a failed check line. */
 function error(message: string): void {
     console.log(`${colors.red}✗${colors.reset} ${message}`);
 }
 
+/** Prints an informational check line. */
 function info(message: string): void {
     console.log(`${colors.cyan}ℹ${colors.reset} ${message}`);
 }
 
+/** Prints a section heading for the multi-step connectivity test. */
 function heading(message: string): void {
     console.log(`\n${colors.bold}${colors.blue}${message}${colors.reset}`);
 }
 
+/** Runs credential, vehicle-list, location, and data-quality checks in order. */
 async function testApiConnection() {
     console.log(`${colors.bold}${colors.cyan}
 ╔═══════════════════════════════════════════════════╗

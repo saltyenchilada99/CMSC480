@@ -1,3 +1,10 @@
+/**
+ * Centralized Leaflet camera controller.
+ *
+ * All marker/search focus requests flow through this component so map bounds,
+ * popup centering, and reset behavior stay consistent across marker layers.
+ */
+
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { useMap, useMapEvents } from 'react-leaflet';
@@ -10,6 +17,7 @@ type MapViewportControllerProps = {
 
 const POSITION_EPSILON_PIXELS = 1;
 
+/** Runs inside `MapContainer` and performs imperative Leaflet camera work. */
 export function MapViewportController({ focusTarget, onResetFocus }: MapViewportControllerProps) {
     const map = useMap();
     const latestFocusRef = useRef<MapFocusTarget>(focusTarget);
@@ -17,6 +25,7 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
     const popupCleanupRef = useRef<null | (() => void)>(null);
     const resetTimeoutRef = useRef<number | null>(null);
 
+    /** Cancel delayed reset work when another map interaction supersedes it. */
     const clearPendingReset = () => {
         if (resetTimeoutRef.current !== null) {
             window.clearTimeout(resetTimeoutRef.current);
@@ -24,6 +33,7 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
         }
     };
 
+    /** Pan just enough to keep the full popup visible inside the map viewport. */
     const centerPopupInView = (popupElement: HTMLElement) => {
         const mapElement = map.getContainer();
 
@@ -58,6 +68,7 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
     }, []);
 
     useEffect(() => {
+        /** Clamp requested centers so maxBounds never cut off cards or markers. */
         const getBoundedCenter = (center: [number, number], zoom: number) => {
             const configuredMaxBounds = map.options.maxBounds;
             const desiredCenter = L.latLng(center);
@@ -132,6 +143,7 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
             popupCleanupRef.current?.();
 
             const cleanupFns: Array<() => void> = [];
+            /** Wait for Leaflet/React layout to settle before measuring the popup. */
             const scheduleAdjust = () => {
                 window.requestAnimationFrame(() => {
                     window.requestAnimationFrame(() => {

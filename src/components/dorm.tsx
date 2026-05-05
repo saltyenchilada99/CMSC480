@@ -6,6 +6,12 @@ import { MarkerPopupCard } from './MarkerPopupCard';
 import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
 import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
+/**
+ * Static residence-life marker layer.
+ *
+ * Housing records are exported for the search index and rendered here as
+ * markers with rich popup cards.
+ */
 type DormLocation = {
     name: string;
     lat: number;
@@ -24,8 +30,9 @@ type DormProps = {
     zoom: number;
 };
 
-const minZoom : number = 17;
+const minZoom: number = 17;
 
+/** Residence halls and apartment communities available to the map/search UI. */
 export const dormLocations: DormLocation[] = [{
     name: "Columbia Hall",
     lat: 41.00802,
@@ -168,6 +175,7 @@ export const dormLocations: DormLocation[] = [{
     link: 'https://www.commonwealthu.edu/campus-life/bloomsburg/housing/jessica-s-kozloff-apartments',
 }];
 
+/** Renders housing markers at close zoom levels to avoid cluttering campus. */
 export const Dorm = memo(function Dorm({ onMarkerFocus, selectedMarker, zoom }: DormProps) {
     const dormIcon = GetDormIcon();
 
@@ -193,6 +201,7 @@ export const Dorm = memo(function Dorm({ onMarkerFocus, selectedMarker, zoom }: 
     );
 });
 
+/** Props for one housing marker and its popup. */
 type DormMarkerProps = {
     dorm: DormLocation;
     icon: L.Icon | L.DivIcon;
@@ -201,6 +210,7 @@ type DormMarkerProps = {
     selectedMarker?: SelectedMarker;
 };
 
+/** Leaflet marker wrapper for a dorm or campus apartment location. */
 function DormMarker({
     dorm,
     icon,

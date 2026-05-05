@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import '../styles/Footer.css';
 
+/**
+ * Compact Commonwealth University footer.
+ *
+ * The footer starts collapsed to preserve map space, then expands in place for
+ * portfolio/production links without navigating away from the tracker.
+ */
 export function Footer() {
   const [expanded, setExpanded] = useState(false);
 

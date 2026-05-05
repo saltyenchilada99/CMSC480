@@ -1,3 +1,11 @@
+/**
+ * Leaflet icon factory for all custom map markers.
+ *
+ * The original image assets contain extra transparent space, so each marker is
+ * wrapped in a `divIcon` with crop/anchor settings tuned for clickable Leaflet
+ * placement and popup alignment.
+ */
+
 import L from 'leaflet';
 import busIcon from './bus_icon.png';
 import busIconNorth from './North_Bus.png';
@@ -26,6 +34,7 @@ type MarkerCrop = {
 
 const HIT_PADDING = 2;
 
+/** Expand the clickable icon area slightly without changing the source asset. */
 function withHitPadding(crop: MarkerCrop): MarkerCrop {
     return {
         left: Math.max(0, crop.left - HIT_PADDING),
@@ -42,6 +51,12 @@ const BUS_HORIZONTAL: MarkerCrop = withHitPadding({ left: 28, top: 6, width: 135
 const BUS_STOP_CROP: MarkerCrop = withHitPadding({ left: 31, top: 4, width: 146, height: 170 });
 const BUS_CROP: MarkerCrop = withHitPadding({ left: 26, top: 5, width: 58, height: 67 });
 
+function toInlineStyle(styles: Record<string, string>): string {
+    return Object.entries(styles)
+        .map(([property, value]) => `${property}:${value}`)
+        .join(';');
+}
+
 function buildIcon(
     iconUrl: string,
     crop: MarkerCrop,
@@ -54,19 +69,25 @@ function buildIcon(
     const adjustedAnchorY = busVertical ? iconAnchorY : crop.height * 0.75;
     const imageOffset = (imageScale - 1) * -50;
     const imageSize = imageScale * 100;
+    const wrapperStyle = toInlineStyle({
+        width: `${crop.width}px`,
+        height: `${crop.height}px`,
+    });
+    const imageStyle = toInlineStyle({
+        width: `${imageSize}%`,
+        height: `${imageSize}%`,
+        left: `${imageOffset}%`,
+        top: `${imageOffset}%`,
+        'object-fit': 'contain',
+    });
 
     return L.divIcon({
-        className: '',
-        html: `
-    <div class="marker-pin-icon-wrapper"
-         style="width:${crop.width}px;height:${crop.height}px;">
-      <img
-        class="marker-pin-icon-img"
-        src="${iconUrl}"
-        draggable="false"
-        style="width:${imageSize}%;height:${imageSize}%;left:${imageOffset}%;top:${imageOffset}%;object-fit:contain;">
-    </div>
-  `,
+        className: 'marker-pin-icon',
+        html: [
+            `<div class="marker-pin-icon-wrapper" style="${wrapperStyle}">`,
+            `<img class="marker-pin-icon-img" src="${iconUrl}" alt="" draggable="false" style="${imageStyle}">`,
+            '</div>',
+        ].join(''),
         iconSize: [crop.width, crop.height],
         iconAnchor: [crop.width / 2, adjustedAnchorY],
         popupAnchor: [0, popupOffsetY],
@@ -89,6 +110,7 @@ const USER_ICON = L.icon({
     iconAnchor: [64, 85],
 });
 
+/** Return a cached bus icon variant by the historical string key. */
 export function GetBusIcon(icon: string) {
     if (icon === 'busIconNorth') return BUS_ICON_NORTH;
     if (icon === 'busIconSouth') return BUS_ICON_SOUTH;
@@ -97,26 +119,32 @@ export function GetBusIcon(icon: string) {
     return icon === 'busIcon' ? BUS_ICON : BUS_ICON_WEST;
 }
 
+/** Bus stop marker icon. */
 export function GetBusStopIcon() {
     return BUS_STOP_ICON;
 }
 
+/** Academic building marker icon. */
 export function GetAcademicIcon() {
     return ACADEMIC_ICON;
 }
 
+/** Residence hall marker icon. */
 export function GetDormIcon() {
     return DORM_ICON;
 }
 
+/** Dining marker icon. */
 export function GetFoodIcon() {
     return FOOD_ICON;
 }
 
+/** Recreation and athletics marker icon. */
 export function GetRecreationIcon() {
     return RECREATION_ICON;
 }
 
+/** Browser geolocation marker icon. */
 export function GetUserIcon(_icon?: string) {
     return USER_ICON;
 }

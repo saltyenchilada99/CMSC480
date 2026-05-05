@@ -5,6 +5,12 @@ import { GetBusStopIcon } from './busMarkers';
 import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
 import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
+/**
+ * Static bus-stop marker layer.
+ *
+ * These stops are shown on the map, linked to route labels in the popup, and
+ * indexed by the global search flow.
+ */
 type RouteInfo = {
     name: string;
     color: string;
@@ -26,6 +32,7 @@ type BusStopProps = {
     zoom?: number;
 };
 
+/** Route names/colors shown as chips in each bus-stop popup. */
 const ROUTES: Record<string, RouteInfo> = {
     campus: { name: 'Campus Loop', color: '#B8860B' },
     downtown: { name: 'Downtown Loop', color: '#6D0026' },
@@ -34,6 +41,7 @@ const ROUTES: Record<string, RouteInfo> = {
 
 const minZoom = 15;
 
+/** Maps each stop key to the routes that serve that stop. */
 const STOP_ROUTES: Record<string, RouteInfo[]> = {
     'BS-1': [ROUTES.campus, ROUTES.walmart],
     'BS-2': [ROUTES.campus],
@@ -48,6 +56,7 @@ const STOP_ROUTES: Record<string, RouteInfo[]> = {
     'BS-11': [ROUTES.downtown],
 };
 
+/** Bus stop metadata used by map markers and search results. */
 export const busStopLibrary: BusStopLocation[] = [{
     name: 'Library, A&A Building',
     lat: 41.00865,
@@ -138,13 +147,15 @@ export const busStopLibrary: BusStopLocation[] = [{
     key: 'BS-11',
 }];
 
+/** Renders bus-stop markers earlier than building markers because stops aid navigation. */
 export const BusStop = memo(function BusStop({ onMarkerFocus, selectedMarker, zoom = minZoom }: BusStopProps) {
     const busStopIcon = GetBusStopIcon();
+
+    if (zoom < minZoom) return null;
 
     return (
         <>
             {busStopLibrary
-                .filter(() => zoom >= minZoom)
                 .map((busStopItem) => {
                     const position: [number, number] = [busStopItem.lat, -busStopItem.long];
 
@@ -163,6 +174,7 @@ export const BusStop = memo(function BusStop({ onMarkerFocus, selectedMarker, zo
     );
 });
 
+/** Props for one bus-stop marker and its popup. */
 type BusStopMarkerProps = {
     busStopItem: BusStopLocation;
     icon: L.Icon | L.DivIcon;
@@ -171,6 +183,7 @@ type BusStopMarkerProps = {
     selectedMarker?: SelectedMarker;
 };
 
+/** Leaflet marker wrapper for a bus stop and its route chips/photo. */
 function BusStopMarker({
     busStopItem,
     icon,

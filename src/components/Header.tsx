@@ -1,3 +1,11 @@
+/**
+ * Top navigation and campus search.
+ *
+ * The search box merges every static campus marker library into a single list,
+ * removes duplicate names, and delegates map movement back to `App` through
+ * `onMarkerFocus`.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import '../styles/Header.css';
@@ -27,6 +35,7 @@ type SearchableCampusLocation = {
 
 type SearchCategory = 'academic' | 'recreation' | 'housing' | 'dining' | 'transit';
 
+/** Labels shown under each search result. */
 const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
   academic: 'Academic',
   recreation: 'Recreation',
@@ -43,10 +52,12 @@ const SEARCH_CATEGORY_PRIORITY: Record<SearchCategory, number> = {
   transit: 4,
 };
 
+/** Search comparison should ignore casing and accidental repeated spaces. */
 function normalizeSearchName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+/** Convert a marker-library entry into the common search result shape. */
 function toSearchItem(
   loc: { key: string; name: string; lat: number; long: number },
   category: SearchCategory
@@ -60,6 +71,13 @@ function toSearchItem(
   };
 }
 
+/**
+ * Collapse duplicate campus names into one search result.
+ *
+ * Some physical places appear in more than one layer, such as a recreation
+ * building that also has a transit stop. The highest-priority layer supplies
+ * the focused marker while the result still lists every matching category.
+ */
 function dedupeSearchItems(items: SearchableCampusLocation[]): SearchableCampusLocation[] {
   const byName = new Map<string, SearchableCampusLocation & { categories: Set<string> }>();
 
@@ -93,6 +111,7 @@ function dedupeSearchItems(items: SearchableCampusLocation[]): SearchableCampusL
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 }
 
+/** Header, schedule modal, and campus-wide search dropdown. */
 export function Header({ onMarkerFocus }: HeaderProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [query, setQuery] = useState('');
@@ -121,6 +140,7 @@ export function Header({ onMarkerFocus }: HeaderProps) {
     return () => document.body.classList.remove('modal-open');
   }, [showScheduleModal]);
 
+  /** Focus the selected marker and ask its layer to open the popup. */
   function handleSelectLocation(loc: SearchableCampusLocation) {
     const position: MapPoint = [loc.lat, -loc.long];
 

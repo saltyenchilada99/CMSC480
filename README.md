@@ -13,6 +13,7 @@ The current app focuses on three transportation routes: Campus Loop, Downtown Lo
 - [Available Scripts](#available-scripts)
 - [API Reference](#api-reference)
 - [Project Structure](#project-structure)
+- [Architecture Documentation](#architecture-documentation)
 - [Project Review Notes](#project-review-notes)
 - [Contribution Analysis](#contribution-analysis)
 - [Troubleshooting](#troubleshooting)
@@ -251,6 +252,8 @@ Broadcasts `location_update` messages to connected clients. The React app listen
 |   |-- busStopImages/        # Stop photos used in bus stop popups
 |   |-- routes/               # Static GeoJSON route overlays
 |   `-- index.html
+|-- docs/
+|   `-- ARCHITECTURE.md       # Reviewer-friendly data flow and design notes
 |-- resources/                # Presentation/data-flow assets and shared icons
 |-- server/
 |   |-- src/
@@ -290,6 +293,10 @@ Broadcasts `location_update` messages to connected clients. The React app listen
 |-- tsconfig.json
 `-- README.md
 ```
+
+## Architecture Documentation
+
+For a reviewer-friendly walkthrough of the runtime flow, frontend/backend responsibilities, smoothing design, route locking, and failure behavior, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Project Review Notes
 

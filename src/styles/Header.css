@@ -1,4 +1,9 @@
-/* Header */
+/*
+ * Header, search dropdown, and schedule modal styles.
+ *
+ * The header stays above the Leaflet map, so z-index and modal isolation are
+ * documented here to make future layout changes less surprising.
+ */
 .app-header {
   background: rgba(110, 16, 32, 0.97);
   backdrop-filter: blur(12px);

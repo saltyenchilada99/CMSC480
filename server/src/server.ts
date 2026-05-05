@@ -1,6 +1,11 @@
 /**
- * server.ts
- * Express server for the Bloomsburg Campus Bussing App
+ * Express + WebSocket backend for the Bloomsburg campus bus tracker.
+ *
+ * Responsibilities:
+ * - Poll or receive Verizon Connect GPS updates.
+ * - Smooth sparse GPS samples into fluid display positions.
+ * - Route-lock buses to static GeoJSON route overlays when possible.
+ * - Serve REST and WebSocket data to the React/Leaflet frontend.
  */
 
 import express, { Request, Response } from 'express';
@@ -18,6 +23,8 @@ import {
 import { BusRoute, LatLng } from './BusRoute';
 import { FluidTrackingEngine } from './FluidTracking';
 
+// Environment-driven runtime knobs keep local development, demos, and webhook
+// deployments configurable without code changes.
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const USE_POLLING = process.env.USE_POLLING !== 'false';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? '30000', 10);
@@ -37,6 +44,13 @@ const MAX_ADAPTIVE_DELAY_MS = parseInt(
 );
 const ROUTES_DIR = process.env.ROUTES_DIR ?? path.resolve(__dirname, '../../public/routes');
 
+/**
+ * Built-in fallback for Campus Loop route locking.
+ *
+ * Normal operation loads all route shapes from public/routes/*.geojson. This
+ * fallback keeps Campus Loop smoothing available if those static files are
+ * missing during local setup.
+ */
 const CAMPUS_LOOP_PATH: LatLng[] = [
     { lat: 41.008689, lng: -76.445122 },
     { lat: 41.008084, lng: -76.444735 },
@@ -92,24 +106,29 @@ let broadcastTimer: ReturnType<typeof setInterval> | null = null;
 let routes: BusRoute[] = [];
 let fluidTracking: FluidTrackingEngine | null = null;
 
+/** Connected frontend clients subscribed to live bus updates. */
 const wsClients = new Set<WebSocket>();
 
+/** Pairs a static GeoJSON file with the route name expected inside it. */
 type RouteFileSpec = {
     filename: string;
     name: string;
     isLoop: boolean;
 };
 
+/** GeoJSON LineString geometry supported by the route loader. */
 type GeoJsonLineString = {
     type: 'LineString';
     coordinates: number[][];
 };
 
+/** GeoJSON MultiLineString geometry supported by the route loader. */
 type GeoJsonMultiLineString = {
     type: 'MultiLineString';
     coordinates: number[][][];
 };
 
+/** Minimal route feature shape needed from static GeoJSON files. */
 type GeoJsonFeature = {
     type: 'Feature';
     properties?: {
@@ -118,6 +137,7 @@ type GeoJsonFeature = {
     geometry?: GeoJsonLineString | GeoJsonMultiLineString;
 };
 
+/** Route file can be a single feature or a standard FeatureCollection. */
 type GeoJsonRouteFile = GeoJsonFeature | {
     type: 'FeatureCollection';
     features?: GeoJsonFeature[];
@@ -129,6 +149,12 @@ const ROUTE_FILES: RouteFileSpec[] = [
     { filename: 'walmart-trip.geojson', name: 'Walmart Trip', isLoop: false },
 ];
 
+/**
+ * Converts backend VehicleLocation objects into the frontend LiveBus contract.
+ *
+ * Raw ping fields are kept alongside smoothed fields so the UI can render a
+ * stable marker while still retaining provider metadata for diagnostics.
+ */
 function mapLocationForClient(loc: VehicleLocation, rawLoc?: VehicleLocation) {
     const pingLat = rawLoc?.Latitude ?? loc.Latitude;
     const pingLng = rawLoc?.Longitude ?? loc.Longitude;
@@ -168,6 +194,7 @@ function mapLocationForClient(loc: VehicleLocation, rawLoc?: VehicleLocation) {
     };
 }
 
+/** Broadcasts a location_update message to every open WebSocket client. */
 function broadcastLocations(locations: VehicleLocation[]): void {
     const rawByVehicleId = new Map(latestRawLocations.map(raw => [raw.VehicleNumber, raw]));
     const message = JSON.stringify({
@@ -184,6 +211,7 @@ function broadcastLocations(locations: VehicleLocation[]): void {
     });
 }
 
+/** Ingests raw provider locations, refreshes smoothing, and notifies clients. */
 function updateLocations(locations: VehicleLocation[]): void {
     latestRawLocations = locations;
     if (!fluidTracking) return;
@@ -193,6 +221,7 @@ function updateLocations(locations: VehicleLocation[]): void {
     console.log(`[Server] Ingested ${locations.length} raw bus location(s), broadcast ${latestDisplayLocations.length} smoothed location(s)`);
 }
 
+/** Converts webhook plots into the same VehicleLocation shape used by polling. */
 function handleWebhookPlots(plots: GpsWebhookPlot[]): void {
     const locations: VehicleLocation[] = plots.map(plot => ({
         VehicleNumber: plot.VehicleNumber,
@@ -250,6 +279,7 @@ app.post('/webhooks/gps', gpsWebhookHandler(handleWebhookPlots));
 
 const wss = new WebSocketServer({ server: httpServer });
 
+/** Sends the current snapshot immediately, then keeps the client subscribed. */
 wss.on('connection', (ws: WebSocket) => {
     wsClients.add(ws);
 
@@ -267,6 +297,7 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('error', () => wsClients.delete(ws));
 });
 
+/** Returns route features from either supported GeoJSON top-level shape. */
 function getRouteFeatures(routeFile: GeoJsonRouteFile): GeoJsonFeature[] {
     if (routeFile.type === 'FeatureCollection') {
         return routeFile.features ?? [];
@@ -279,6 +310,7 @@ function getRouteFeatures(routeFile: GeoJsonRouteFile): GeoJsonFeature[] {
     return [];
 }
 
+/** Extracts coordinates from LineString or MultiLineString route geometry. */
 function getCoordinatesFromGeometry(geometry: GeoJsonFeature['geometry']): number[][] {
     if (!geometry) return [];
 
@@ -293,6 +325,7 @@ function getCoordinatesFromGeometry(geometry: GeoJsonFeature['geometry']): numbe
     return [];
 }
 
+/** Converts GeoJSON [lng, lat] coordinates into backend { lat, lng } points. */
 function coordinatesToPath(coordinates: number[][]): LatLng[] {
     return coordinates
         .map((coordinate) => {
@@ -302,10 +335,12 @@ function coordinatesToPath(coordinates: number[][]): LatLng[] {
         .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
 }
 
+/** Normalizes unknown errors into readable startup log messages. */
 function getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
+/** Loads one static route file and converts it into a measured BusRoute. */
 async function loadRouteFromGeoJson({ filename, name, isLoop }: RouteFileSpec): Promise<BusRoute> {
     const routePath = path.join(ROUTES_DIR, filename);
     const raw = await readFile(routePath, 'utf8');
@@ -322,6 +357,7 @@ async function loadRouteFromGeoJson({ filename, name, isLoop }: RouteFileSpec): 
     return new BusRoute(name, routePathPoints, ROUTE_CAPTURE_DISTANCE_METERS, isLoop);
 }
 
+/** Loads all configured route files, falling back to built-in Campus Loop. */
 async function buildRoutes(): Promise<BusRoute[]> {
     const loadedRoutes: BusRoute[] = [];
 
@@ -345,6 +381,7 @@ async function buildRoutes(): Promise<BusRoute[]> {
     ];
 }
 
+/** Starts HTTP, route loading, polling/webhook mode, and the broadcast timer. */
 async function startServer() {
     try {
         console.log('=== Bloomsburg Campus Bus Tracker Server ===\n');
@@ -406,6 +443,7 @@ async function startServer() {
     }
 }
 
+/** Gracefully stops timers, polling, and the HTTP server on process signals. */
 function shutdown() {
     stopPolling();
     if (broadcastTimer) {

@@ -1,4 +1,11 @@
 
+/*
+ * Main application stylesheet.
+ *
+ * Layout, map controls, marker popups, and the floating layer panel live here
+ * so the React components can stay focused on state and data flow.
+ */
+
 * {
   margin: 0;
   padding: 0;

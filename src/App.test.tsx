@@ -1,5 +1,11 @@
 import { render, screen } from '@testing-library/react';
 
+/**
+ * App smoke test.
+ *
+ * Leaflet and the heavy map layers are mocked here so CI can verify the React
+ * shell and sidebar controls without needing a browser map canvas.
+ */
 type ChildrenProps = {
   children?: import('react').ReactNode;
 };

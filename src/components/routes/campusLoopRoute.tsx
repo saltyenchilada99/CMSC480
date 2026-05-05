@@ -1,5 +1,6 @@
 import { FileLayerRoute } from './FileLayerRoute';
 
+/** Campus Loop route overlay, loaded from the static GeoJSON asset. */
 export function CampusLoopRoute({ toggleRoutes = false }: { toggleRoutes?: boolean }) {
     return (
         <FileLayerRoute

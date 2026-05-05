@@ -1,3 +1,11 @@
+/**
+ * Static GeoJSON route loader.
+ *
+ * Route overlays are stored in `public/routes/` and loaded through
+ * `leaflet-filelayer` so the frontend can render Campus Loop, Downtown Loop,
+ * and Walmart Trip without waiting for live bus data.
+ */
+
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { useMap } from "react-leaflet";
@@ -13,6 +21,7 @@ type FileLayerRouteProps = {
 
 let didInitializeFileLayer = false;
 
+/** Register the Leaflet plugin once; it mutates the global Leaflet namespace. */
 function initializeFileLayerPlugin() {
     if (didInitializeFileLayer || typeof window === "undefined") return;
 
@@ -20,6 +29,7 @@ function initializeFileLayerPlugin() {
     didInitializeFileLayer = true;
 }
 
+/** Fetch one GeoJSON file and add/remove it from the active Leaflet map. */
 export function FileLayerRoute({
     toggleRoutes = false,
     filename,

@@ -1,3 +1,12 @@
+/**
+ * Movement-based bus icon selection.
+ *
+ * Provider heading can be stale or inconsistent with delayed fluid playback, so
+ * live markers choose their north/east/south/west artwork from actual position
+ * changes. The provider heading is only used for the first frame before enough
+ * movement exists to calculate a bearing.
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GetBusIcon } from './busMarkers';
 import type { LiveBus, MapPoint } from '../types/frontend';
@@ -43,11 +52,13 @@ function getIconNameFromBearing(bearing: number): BusDirectionIconName {
   return 'busIconWest';
 }
 
+/** Return a safe initial bearing before position deltas are available. */
 function getFallbackBearing(heading: LiveBus['heading']): number {
   const bearing = Number(heading);
   return Number.isFinite(bearing) ? bearing : 0;
 }
 
+/** Pick a Leaflet icon using real map movement, not user-visible speed/heading. */
 export function useBusMovementIcon(position: MapPoint, fallbackHeading: LiveBus['heading']) {
   const lastDirectionPositionRef = useRef<MapPoint | null>(null);
   const [iconName, setIconName] = useState<BusDirectionIconName>(() => (

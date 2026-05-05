@@ -1,3 +1,9 @@
+/*
+ * Global browser reset and base typography.
+ *
+ * Leaflet's stylesheet is imported here once so all map components inherit the
+ * library's required marker, popup, and tile styles.
+ */
 @import "leaflet/dist/leaflet.css";
 
 body {
