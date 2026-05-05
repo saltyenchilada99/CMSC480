@@ -1,7 +1,10 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
+import L from 'leaflet';
 import { Marker, Popup } from 'react-leaflet';
 import { GetRecreationIcon } from './busMarkers';
 import { MarkerPopupCard } from './MarkerPopupCard';
+import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
+import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
 type RecreationLocation = {
     name: string;
@@ -13,6 +16,12 @@ type RecreationLocation = {
     chips: string[];
     highlights: string[];
     link: string;
+};
+
+type RecreationProps = {
+    onMarkerFocus?: MarkerFocusHandler;
+    selectedMarker?: SelectedMarker;
+    zoom: number;
 };
 
 const minZoom : number = 17;
@@ -111,7 +120,7 @@ export const recreationLocations: RecreationLocation[] = [{
     link: 'https://bloomsburgathletics.com/facilities/danny-litwhiler-field/6',
 }];
 
-export const Recreation = memo(function Recreation({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
+export const Recreation = memo(function Recreation({ onMarkerFocus, selectedMarker, zoom }: RecreationProps) {
     if (zoom < minZoom) return null;
 
     return (
@@ -120,31 +129,69 @@ export const Recreation = memo(function Recreation({ onMarkerFocus, zoom }: { on
             const position: [number, number] = [location.lat, -location.long];
 
             return (
-                <Marker
+                <RecreationMarker
                     key={location.key}
-                    position={position}
                     icon={GetRecreationIcon()}
-                    bubblingMouseEvents={false}
-                    zIndexOffset={500}
-                    eventHandlers={{
-                        click: () => onMarkerFocus?.(position, 'marker'),
-                    }}
-                >
-                    <Popup className="campus-popup campus-popup--recreation" minWidth={260} maxWidth={312} autoPan={false}>
-                        <MarkerPopupCard
-                            theme="recreation"
-                            label={location.label}
-                            title={location.name}
-                            description={location.description}
-                            chips={location.chips}
-                            highlights={location.highlights}
-                            link={location.link}
-                            linkLabel="Official details"
-                        />
-                    </Popup>
-                </Marker>
+                    location={location}
+                    onMarkerFocus={onMarkerFocus}
+                    position={position}
+                    selectedMarker={selectedMarker}
+                />
             );
         })}
         </>
     );
 });
+
+type RecreationMarkerProps = {
+    icon: L.Icon | L.DivIcon;
+    location: RecreationLocation;
+    onMarkerFocus?: MarkerFocusHandler;
+    position: [number, number];
+    selectedMarker?: SelectedMarker;
+};
+
+function RecreationMarker({
+    icon,
+    location,
+    onMarkerFocus,
+    position,
+    selectedMarker,
+}: RecreationMarkerProps) {
+    const markerRef = useRef<L.Marker | null>(null);
+
+    useSelectedMarkerPopup({
+        markerRef,
+        markerKey: location.key,
+        markerPosition: position,
+        selectedMarkerKey: selectedMarker?.key,
+        selectedMarkerRequestId: selectedMarker?.requestId,
+        selectedMarkerZoom: selectedMarker?.zoom,
+    });
+
+    return (
+        <Marker
+            ref={markerRef}
+            position={position}
+            icon={icon}
+            bubblingMouseEvents={false}
+            zIndexOffset={500}
+            eventHandlers={{
+                click: () => onMarkerFocus?.(position, 'marker', undefined, location.key),
+            }}
+        >
+            <Popup className="campus-popup campus-popup--recreation" minWidth={260} maxWidth={312} autoPan={false}>
+                <MarkerPopupCard
+                    theme="recreation"
+                    label={location.label}
+                    title={location.name}
+                    description={location.description}
+                    chips={location.chips}
+                    highlights={location.highlights}
+                    link={location.link}
+                    linkLabel="Official details"
+                />
+            </Popup>
+        </Marker>
+    );
+}

@@ -1,7 +1,9 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
+import L from 'leaflet';
 import { Marker, Popup } from 'react-leaflet';
 import { GetFoodIcon } from './busMarkers';
-import type { FoodKey, FoodVisibility, MapPoint, MarkerFocusHandler } from '../types/frontend';
+import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
+import type { FoodKey, FoodVisibility, MapPoint, MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
 const minZoom = 17;
 
@@ -164,45 +166,84 @@ const DEFAULT_FOOD_VISIBILITY: FoodVisibility = {
 type FoodProps = {
     foodVisibility?: FoodVisibility;
     onMarkerFocus?: MarkerFocusHandler;
+    selectedMarker?: SelectedMarker;
     zoom: number;
 };
 
-export const Food = memo(function Food({foodVisibility = DEFAULT_FOOD_VISIBILITY, onMarkerFocus, zoom}: FoodProps) {
+export const Food = memo(function Food({foodVisibility = DEFAULT_FOOD_VISIBILITY, onMarkerFocus, selectedMarker, zoom}: FoodProps) {
     return (
         <>
             {foodLocations.filter((location) => zoom >= minZoom && foodVisibility[location.key]).map((location: FoodLocation) => {
                 const position: MapPoint = [location.lat, -location.long];
 
                 return (
-                <Marker
+                <FoodMarker
                     key={location.key}
-                    position={position}
                     icon={GetFoodIcon()}
-                    bubblingMouseEvents={false}
-                    zIndexOffset={500}
-                    eventHandlers={{
-                        click: () => onMarkerFocus?.(position, 'marker'),
-                    }}
-                >
-                    <Popup className="campus-popup campus-popup--food" minWidth={248} maxWidth={304} autoPan={false}>
-                        <div className="info-popup-card info-popup-card--food">
-                            <span className="info-popup-card__eyebrow">Dining</span>
-                            <h3 className="info-popup-card__title">{location.name}</h3>
-                            <p className="info-popup-card__text">{location.desc}</p>
-                            <div className="info-popup-card__stack">
-                            {location.venues.map((venue) => (
-                                <div key={venue.name} className="info-popup-card__venue">
-                                    <div className="info-popup-card__venue-name">{venue.name}</div>
-                                    <div className="info-popup-card__venue-text">{venue.type}</div>
-                                    <div className="info-popup-card__meta">Hours: {venue.hours}</div>
-                                </div>
-                            ))}
-                            </div>
-                        </div>
-                    </Popup>
-                </Marker>
+                    location={location}
+                    onMarkerFocus={onMarkerFocus}
+                    position={position}
+                    selectedMarker={selectedMarker}
+                />
                 );
             })}
         </>
     );
 });
+
+type FoodMarkerProps = {
+    icon: L.Icon | L.DivIcon;
+    location: FoodLocation;
+    onMarkerFocus?: MarkerFocusHandler;
+    position: MapPoint;
+    selectedMarker?: SelectedMarker;
+};
+
+function FoodMarker({
+    icon,
+    location,
+    onMarkerFocus,
+    position,
+    selectedMarker,
+}: FoodMarkerProps) {
+    const markerRef = useRef<L.Marker | null>(null);
+
+    useSelectedMarkerPopup({
+        markerRef,
+        markerKey: location.key,
+        markerPosition: position,
+        selectedMarkerKey: selectedMarker?.key,
+        selectedMarkerRequestId: selectedMarker?.requestId,
+        selectedMarkerZoom: selectedMarker?.zoom,
+    });
+
+    return (
+        <Marker
+            ref={markerRef}
+            position={position}
+            icon={icon}
+            bubblingMouseEvents={false}
+            zIndexOffset={500}
+            eventHandlers={{
+                click: () => onMarkerFocus?.(position, 'marker', undefined, location.key),
+            }}
+        >
+            <Popup className="campus-popup campus-popup--food" minWidth={248} maxWidth={304} autoPan={false}>
+                <div className="info-popup-card info-popup-card--food">
+                    <span className="info-popup-card__eyebrow">Dining</span>
+                    <h3 className="info-popup-card__title">{location.name}</h3>
+                    <p className="info-popup-card__text">{location.desc}</p>
+                    <div className="info-popup-card__stack">
+                    {location.venues.map((venue) => (
+                        <div key={venue.name} className="info-popup-card__venue">
+                            <div className="info-popup-card__venue-name">{venue.name}</div>
+                            <div className="info-popup-card__venue-text">{venue.type}</div>
+                            <div className="info-popup-card__meta">Hours: {venue.hours}</div>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+            </Popup>
+        </Marker>
+    );
+}

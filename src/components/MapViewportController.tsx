@@ -109,10 +109,6 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
             return;
         }
 
-        if (focusTarget.type === 'marker' && !zoomChanged) {
-            return;
-        }
-
         if (zoomChanged) {
             map.flyTo(boundedCenter, nextZoom, {
                 animate: true,
@@ -181,13 +177,6 @@ export function MapViewportController({ focusTarget, onResetFocus }: MapViewport
             hasOpenPopupRef.current = false;
             popupCleanupRef.current?.();
             clearPendingReset();
-            resetTimeoutRef.current = window.setTimeout(() => {
-                resetTimeoutRef.current = null;
-
-                if (!hasOpenPopupRef.current && latestFocusRef.current.type === 'marker') {
-                    onResetFocus();
-                }
-            }, 120);
         },
         click(event) {
             const clickTarget = event.originalEvent?.target;

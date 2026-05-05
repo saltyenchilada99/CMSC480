@@ -1,7 +1,10 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
+import L from 'leaflet';
 import { Marker, Popup } from 'react-leaflet';
 import { GetDormIcon } from './busMarkers';
 import { MarkerPopupCard } from './MarkerPopupCard';
+import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
+import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
 type DormLocation = {
     name: string;
@@ -13,6 +16,12 @@ type DormLocation = {
     chips: string[];
     highlights: string[];
     link: string;
+};
+
+type DormProps = {
+    onMarkerFocus?: MarkerFocusHandler;
+    selectedMarker?: SelectedMarker;
+    zoom: number;
 };
 
 const minZoom : number = 17;
@@ -159,7 +168,7 @@ export const dormLocations: DormLocation[] = [{
     link: 'https://www.commonwealthu.edu/campus-life/bloomsburg/housing/jessica-s-kozloff-apartments',
 }];
 
-export const Dorm = memo(function Dorm({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
+export const Dorm = memo(function Dorm({ onMarkerFocus, selectedMarker, zoom }: DormProps) {
     const dormIcon = GetDormIcon();
 
     if (zoom < minZoom) return null;
@@ -170,31 +179,69 @@ export const Dorm = memo(function Dorm({ onMarkerFocus, zoom }: { onMarkerFocus?
             const position: [number, number] = [dorm.lat, -dorm.long];
 
             return (
-            <Marker
-                key={`${dorm.key}`}
-                position={position}
-                icon={dormIcon}
-                bubblingMouseEvents={false}
-                zIndexOffset={500}
-                eventHandlers={{
-                    click: () => onMarkerFocus?.(position, 'marker'),
-                }}
-            >
-                <Popup className="campus-popup campus-popup--housing" minWidth={260} maxWidth={312} autoPan={false}>
-                    <MarkerPopupCard
-                        theme="housing"
-                        label={dorm.label}
-                        title={dorm.name}
-                        description={dorm.description}
-                        chips={dorm.chips}
-                        highlights={dorm.highlights}
-                        link={dorm.link}
-                        linkLabel="Housing details"
-                    />
-                </Popup>
-            </Marker>
+                <DormMarker
+                    key={dorm.key}
+                    dorm={dorm}
+                    icon={dormIcon}
+                    onMarkerFocus={onMarkerFocus}
+                    position={position}
+                    selectedMarker={selectedMarker}
+                />
             );
         })}
         </>
     );
 });
+
+type DormMarkerProps = {
+    dorm: DormLocation;
+    icon: L.Icon | L.DivIcon;
+    onMarkerFocus?: MarkerFocusHandler;
+    position: [number, number];
+    selectedMarker?: SelectedMarker;
+};
+
+function DormMarker({
+    dorm,
+    icon,
+    onMarkerFocus,
+    position,
+    selectedMarker,
+}: DormMarkerProps) {
+    const markerRef = useRef<L.Marker | null>(null);
+
+    useSelectedMarkerPopup({
+        markerRef,
+        markerKey: dorm.key,
+        markerPosition: position,
+        selectedMarkerKey: selectedMarker?.key,
+        selectedMarkerRequestId: selectedMarker?.requestId,
+        selectedMarkerZoom: selectedMarker?.zoom,
+    });
+
+    return (
+        <Marker
+            ref={markerRef}
+            position={position}
+            icon={icon}
+            bubblingMouseEvents={false}
+            zIndexOffset={500}
+            eventHandlers={{
+                click: () => onMarkerFocus?.(position, 'marker', undefined, dorm.key),
+            }}
+        >
+            <Popup className="campus-popup campus-popup--housing" minWidth={260} maxWidth={312} autoPan={false}>
+                <MarkerPopupCard
+                    theme="housing"
+                    label={dorm.label}
+                    title={dorm.name}
+                    description={dorm.description}
+                    chips={dorm.chips}
+                    highlights={dorm.highlights}
+                    link={dorm.link}
+                    linkLabel="Housing details"
+                />
+            </Popup>
+        </Marker>
+    );
+}

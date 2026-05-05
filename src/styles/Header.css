@@ -245,12 +245,31 @@ body.modal-open .leaflet-top {
 }
 
 .dropdown-item {
+  display: grid;
+  gap: 2px;
   padding: 9px 10px;
   border-radius: 6px;
   cursor: pointer;
   color: #201719;
   font-size: 0.88rem;
   line-height: 1.25;
+}
+
+.dropdown-item__name,
+.dropdown-item__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-item__name {
+  font-weight: 650;
+}
+
+.dropdown-item__meta {
+  color: #6d5b60;
+  font-size: 0.74rem;
 }
 
 .dropdown-item:hover {

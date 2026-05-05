@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import '../styles/Header.css';
 import { busStopLibrary } from './busStop';
@@ -19,21 +19,97 @@ type SearchableCampusLocation = {
   name: string;
   lat: number;
   long: number;
+  category: SearchCategory;
+  categoryLabel: string;
+  categorySummary: string;
+  priority: number;
 };
+
+type SearchCategory = 'academic' | 'recreation' | 'housing' | 'dining' | 'transit';
+
+const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
+  academic: 'Academic',
+  recreation: 'Recreation',
+  housing: 'Housing',
+  dining: 'Dining',
+  transit: 'Transit stop',
+};
+
+const SEARCH_CATEGORY_PRIORITY: Record<SearchCategory, number> = {
+  academic: 0,
+  recreation: 1,
+  housing: 2,
+  dining: 3,
+  transit: 4,
+};
+
+function normalizeSearchName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function toSearchItem(
+  loc: { key: string; name: string; lat: number; long: number },
+  category: SearchCategory
+): SearchableCampusLocation {
+  return {
+    ...loc,
+    category,
+    categoryLabel: SEARCH_CATEGORY_LABELS[category],
+    categorySummary: SEARCH_CATEGORY_LABELS[category],
+    priority: SEARCH_CATEGORY_PRIORITY[category],
+  };
+}
+
+function dedupeSearchItems(items: SearchableCampusLocation[]): SearchableCampusLocation[] {
+  const byName = new Map<string, SearchableCampusLocation & { categories: Set<string> }>();
+
+  for (const item of items) {
+    const normalizedName = normalizeSearchName(item.name);
+    const existing = byName.get(normalizedName);
+
+    if (!existing) {
+      byName.set(normalizedName, {
+        ...item,
+        categories: new Set([item.categoryLabel]),
+      });
+      continue;
+    }
+
+    existing.categories.add(item.categoryLabel);
+
+    if (item.priority < existing.priority) {
+      byName.set(normalizedName, {
+        ...item,
+        categories: existing.categories,
+      });
+    }
+  }
+
+  return Array.from(byName.values())
+    .map(({ categories, ...item }) => ({
+      ...item,
+      categorySummary: Array.from(categories).join(' + '),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+}
 
 export function Header({ onMarkerFocus }: HeaderProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [query, setQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const normalizedQuery = query.toLowerCase().trim();
-  const allFilteredItems: SearchableCampusLocation[] = [
-    ...busStopLibrary,
-    ...dormLocations,
-    ...academicBuildings,
-    ...recreationLocations,
-    ...foodLocations,
-  ].filter((loc) => loc.name.toLowerCase().includes(normalizedQuery));
+  const normalizedQuery = normalizeSearchName(query);
+  const searchItems = useMemo(() => dedupeSearchItems([
+    ...academicBuildings.map((loc) => toSearchItem(loc, 'academic')),
+    ...recreationLocations.map((loc) => toSearchItem(loc, 'recreation')),
+    ...dormLocations.map((loc) => toSearchItem(loc, 'housing')),
+    ...foodLocations.map((loc) => toSearchItem(loc, 'dining')),
+    ...busStopLibrary.map((loc) => toSearchItem(loc, 'transit')),
+  ]), []);
+  const allFilteredItems = searchItems.filter((loc) => (
+    normalizedQuery.length === 0 ||
+    normalizeSearchName(loc.name).includes(normalizedQuery)
+  ));
 
   useEffect(() => {
     if (showScheduleModal) {
@@ -50,7 +126,7 @@ export function Header({ onMarkerFocus }: HeaderProps) {
 
     setQuery(loc.name);
     setShowDropdown(false);
-    onMarkerFocus?.(position, 'marker', 18);
+    onMarkerFocus?.(position, 'marker', 18, loc.key);
   }
 
   return (
@@ -69,7 +145,7 @@ export function Header({ onMarkerFocus }: HeaderProps) {
             <input
               type="search"
               className="search-input"
-              placeholder="Search bus stops..."
+              placeholder="Search campus..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -83,7 +159,8 @@ export function Header({ onMarkerFocus }: HeaderProps) {
                       className="dropdown-item"
                       onMouseDown={() => handleSelectLocation(loc)}
                     >
-                      {loc.name}
+                      <span className="dropdown-item__name">{loc.name}</span>
+                      <span className="dropdown-item__meta">{loc.categorySummary}</span>
                     </li>
                   ))
                 ) : (

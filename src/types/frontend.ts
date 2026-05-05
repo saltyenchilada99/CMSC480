@@ -4,13 +4,22 @@ export type MapFocusTarget = {
   type: 'campus' | 'marker' | 'user';
   center: MapPoint;
   zoom?: number;
+  markerKey?: string;
+  requestId?: number;
 };
 
 export type MarkerFocusHandler = (
   center: MapPoint,
   type?: 'marker' | 'user',
-  zoom?: number
+  zoom?: number,
+  markerKey?: string
 ) => void;
+
+export type SelectedMarker = {
+  key: string | null;
+  requestId: number;
+  zoom?: number;
+};
 
 export type TrackingMode = 'fluid' | 'ping';
 

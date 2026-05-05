@@ -27,6 +27,7 @@ import type {
   MapPoint,
   MarkerFocusHandler,
   RouteVisibility,
+  SelectedMarker,
   TrackingMode,
 } from './types/frontend';
 
@@ -82,8 +83,8 @@ const CAMPUS_ZOOM = 15.25;
 const BUS_MARKER_ANIMATION_MS = 240;
 const EMPTY_BUSES: LiveBus[] = [];
 const BLOOMSBURG_BOUNDS: [MapPoint, MapPoint] = [
-  [40.9850, -76.5050],
-  [41.0300, -76.4300],
+  [40.9700, -76.5250],
+  [41.0450, -76.4050],
 ];
 
 function getBusIconName(heading: LiveBus['heading']): string {
@@ -252,7 +253,12 @@ function App() {
     center: CAMPUS_CENTER,
     zoom: CAMPUS_ZOOM,
   });
+  const [selectedMarker, setSelectedMarker] = useState<SelectedMarker>({
+    key: null,
+    requestId: 0,
+  });
   const mapRef = useRef<L.Map | null>(null);
+  const markerRequestIdRef = useRef(0);
   const foodVisibility = DEFAULT_FOOD_OPTIONS;
 
   useEffect(() => {
@@ -333,6 +339,11 @@ function App() {
   }, []);
 
   const handleCenterMap = useCallback(() => {
+    setSelectedMarker((prev) => ({
+      key: null,
+      requestId: prev.requestId,
+    }));
+
     setFocusTarget({
       type: 'campus',
       center: CAMPUS_CENTER,
@@ -345,16 +356,36 @@ function App() {
     });
   }, []);
 
-  const handleMarkerFocus = useCallback<MarkerFocusHandler>((center, type = 'marker', targetZoom) => {
+  const handleMarkerFocus = useCallback<MarkerFocusHandler>((center, type = 'marker', targetZoom, markerKey) => {
     const nextCenter: MapPoint = [Number(center[0]), Number(center[1])];
     if (!Number.isFinite(nextCenter[0]) || !Number.isFinite(nextCenter[1])) {
       return;
+    }
+
+    const nextRequestId = markerKey ? markerRequestIdRef.current + 1 : markerRequestIdRef.current;
+    if (markerKey) {
+      markerRequestIdRef.current = nextRequestId;
+      if (markerKey.startsWith('BS-')) {
+        setShowStops(true);
+      }
+      setSelectedMarker({
+        key: markerKey,
+        requestId: nextRequestId,
+        zoom: targetZoom,
+      });
+    } else if (type !== 'marker') {
+      setSelectedMarker((prev) => ({
+        key: null,
+        requestId: prev.requestId,
+      }));
     }
 
     setFocusTarget({
       type,
       center: nextCenter,
       zoom: targetZoom,
+      markerKey,
+      requestId: nextRequestId,
     });
   }, []);
 
@@ -402,11 +433,11 @@ function App() {
           <CampusLoopRoute toggleRoutes={showRoutes && routeVisibility.campus} />
           <DowntownLoopRoute toggleRoutes={showRoutes && routeVisibility.downtown} />
           <WalmartTripRoute toggleRoutes={showRoutes && routeVisibility.walmart} />
-          <Academic onMarkerFocus={handleMarkerFocus} zoom={zoom} />
-          <Recreation onMarkerFocus={handleMarkerFocus} zoom={zoom} />
-          <Dorm onMarkerFocus={handleMarkerFocus} zoom={zoom} />
-          <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} zoom={zoom} />
-          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} zoom={zoom} />}
+          <Academic onMarkerFocus={handleMarkerFocus} selectedMarker={selectedMarker} zoom={zoom} />
+          <Recreation onMarkerFocus={handleMarkerFocus} selectedMarker={selectedMarker} zoom={zoom} />
+          <Dorm onMarkerFocus={handleMarkerFocus} selectedMarker={selectedMarker} zoom={zoom} />
+          <Food foodVisibility={foodVisibility} onMarkerFocus={handleMarkerFocus} selectedMarker={selectedMarker} zoom={zoom} />
+          {showStops && <BusStop onMarkerFocus={handleMarkerFocus} selectedMarker={selectedMarker} zoom={zoom} />}
         </MapContainer>
       </div>
       <Footer />

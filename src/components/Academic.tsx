@@ -1,7 +1,10 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
+import L from 'leaflet';
 import { Marker, Popup } from 'react-leaflet';
 import { GetAcademicIcon } from './busMarkers';
 import { MarkerPopupCard } from './MarkerPopupCard';
+import { useSelectedMarkerPopup } from './useSelectedMarkerPopup';
+import type { MarkerFocusHandler, SelectedMarker } from '../types/frontend';
 
 const minZoom : number = 17;
 
@@ -15,6 +18,12 @@ type AcademicBuilding = {
     chips: string[];
     highlights: string[];
     link: string;
+};
+
+type AcademicProps = {
+    onMarkerFocus?: MarkerFocusHandler;
+    selectedMarker?: SelectedMarker;
+    zoom: number;
 };
 
 export const academicBuildings: AcademicBuilding[] = [{
@@ -173,7 +182,7 @@ export const academicBuildings: AcademicBuilding[] = [{
     link: 'https://www.commonwealthu.edu/offices-directory/arts-bloom/facilities/gallery-greenly-center',
 }];
 
-export const Academic = memo(function Academic({ onMarkerFocus, zoom }: { onMarkerFocus?: (center: [number, number], type?: 'marker' | 'user', zoom?: number) => void; zoom: number }) {
+export const Academic = memo(function Academic({ onMarkerFocus, selectedMarker, zoom }: AcademicProps) {
     const academicIcon = GetAcademicIcon();
 
     if (zoom < minZoom) return null;
@@ -184,31 +193,69 @@ export const Academic = memo(function Academic({ onMarkerFocus, zoom }: { onMark
             const position: [number, number] = [academic.lat, -academic.long];
 
             return (
-            <Marker
-                key={`${academic.key}`}
-                position={position}
-                icon={academicIcon}
-                bubblingMouseEvents={false}
-                zIndexOffset={500}
-                eventHandlers={{
-                    click: () => onMarkerFocus?.(position, 'marker'),
-                }}
-            >
-                <Popup className="campus-popup campus-popup--academic" minWidth={260} maxWidth={312} autoPan={false}>
-                    <MarkerPopupCard
-                        theme="academic"
-                        label={academic.label}
-                        title={academic.name}
-                        description={academic.description}
-                        chips={academic.chips}
-                        highlights={academic.highlights}
-                        link={academic.link}
-                        linkLabel="Official details"
-                    />
-                </Popup>
-            </Marker>
+                <AcademicMarker
+                    key={academic.key}
+                    academic={academic}
+                    icon={academicIcon}
+                    onMarkerFocus={onMarkerFocus}
+                    position={position}
+                    selectedMarker={selectedMarker}
+                />
             );
         })}
         </>
     );
 });
+
+type AcademicMarkerProps = {
+    academic: AcademicBuilding;
+    icon: L.Icon | L.DivIcon;
+    onMarkerFocus?: MarkerFocusHandler;
+    position: [number, number];
+    selectedMarker?: SelectedMarker;
+};
+
+function AcademicMarker({
+    academic,
+    icon,
+    onMarkerFocus,
+    position,
+    selectedMarker,
+}: AcademicMarkerProps) {
+    const markerRef = useRef<L.Marker | null>(null);
+
+    useSelectedMarkerPopup({
+        markerRef,
+        markerKey: academic.key,
+        markerPosition: position,
+        selectedMarkerKey: selectedMarker?.key,
+        selectedMarkerRequestId: selectedMarker?.requestId,
+        selectedMarkerZoom: selectedMarker?.zoom,
+    });
+
+    return (
+        <Marker
+            ref={markerRef}
+            position={position}
+            icon={icon}
+            bubblingMouseEvents={false}
+            zIndexOffset={500}
+            eventHandlers={{
+                click: () => onMarkerFocus?.(position, 'marker', undefined, academic.key),
+            }}
+        >
+            <Popup className="campus-popup campus-popup--academic" minWidth={260} maxWidth={312} autoPan={false}>
+                <MarkerPopupCard
+                    theme="academic"
+                    label={academic.label}
+                    title={academic.name}
+                    description={academic.description}
+                    chips={academic.chips}
+                    highlights={academic.highlights}
+                    link={academic.link}
+                    linkLabel="Official details"
+                />
+            </Popup>
+        </Marker>
+    );
+}
