@@ -30,6 +30,11 @@ const FLUID_BROADCAST_INTERVAL_MS = parseInt(process.env.FLUID_BROADCAST_INTERVA
 const ROUTE_CAPTURE_DISTANCE_METERS = parseInt(process.env.ROUTE_CAPTURE_DISTANCE_METERS ?? '225', 10);
 const ROUTE_RELEASE_DISTANCE_METERS = parseInt(process.env.ROUTE_RELEASE_DISTANCE_METERS ?? '325', 10);
 const ADAPTIVE_DELAY_BUFFER_MS = parseInt(process.env.ADAPTIVE_DELAY_BUFFER_MS ?? '2000', 10);
+const MIN_ADAPTIVE_DELAY_MS = parseInt(process.env.FLUID_MIN_DELAY_MS ?? '5000', 10);
+const MAX_ADAPTIVE_DELAY_MS = parseInt(
+    process.env.FLUID_MAX_DELAY_MS ?? `${Math.max(INTERPOLATION_WINDOW_MS * 4, 120_000)}`,
+    10
+);
 const ROUTES_DIR = process.env.ROUTES_DIR ?? path.resolve(__dirname, '../../public/routes');
 
 const CAMPUS_LOOP_PATH: LatLng[] = [
@@ -230,6 +235,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
         rawBusCount: latestRawLocations.length,
         smoothingDelayMs: INTERPOLATION_WINDOW_MS,
         smoothingBroadcastMs: FLUID_BROADCAST_INTERVAL_MS,
+        smoothingMinDelayMs: MIN_ADAPTIVE_DELAY_MS,
+        smoothingMaxDelayMs: MAX_ADAPTIVE_DELAY_MS,
         routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
         routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
         pollIntervalMs: POLL_INTERVAL_MS,
@@ -362,7 +369,7 @@ async function startServer() {
         console.log(`[Server] Running on http://localhost:${PORT}`);
         console.log(`[Server] REST API: http://localhost:${PORT}/api/buses`);
         console.log(`[Server] WebSocket: ws://localhost:${PORT}`);
-        console.log(`[Smoothing] Interpolation window: ${INTERPOLATION_WINDOW_MS}ms, broadcast: ${FLUID_BROADCAST_INTERVAL_MS}ms`);
+        console.log(`[Smoothing] Fallback window: ${INTERPOLATION_WINDOW_MS}ms, adaptive: ${MIN_ADAPTIVE_DELAY_MS}-${MAX_ADAPTIVE_DELAY_MS}ms, broadcast: ${FLUID_BROADCAST_INTERVAL_MS}ms`);
         console.log(`[Smoothing] Route capture/release: ${ROUTE_CAPTURE_DISTANCE_METERS}m / ${ROUTE_RELEASE_DISTANCE_METERS}m`);
 
         routes = await buildRoutes();
@@ -370,7 +377,9 @@ async function startServer() {
             delayMs: INTERPOLATION_WINDOW_MS,
             routeCaptureDistanceMeters: ROUTE_CAPTURE_DISTANCE_METERS,
             routeReleaseDistanceMeters: ROUTE_RELEASE_DISTANCE_METERS,
-            adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS
+            adaptiveDelayBufferMs: ADAPTIVE_DELAY_BUFFER_MS,
+            minAdaptiveDelayMs: MIN_ADAPTIVE_DELAY_MS,
+            maxAdaptiveDelayMs: MAX_ADAPTIVE_DELAY_MS
         });
         console.log(`[Routes] Loaded ${routes.length} routes for route-lock smoothing`);
 

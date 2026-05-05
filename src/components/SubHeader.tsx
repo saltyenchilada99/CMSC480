@@ -35,12 +35,12 @@ const DEFAULT_OVERLAYS: OverlayVisibility = {
   user: true,
 };
 
-const DEFAULT_TRACKING_MODE: TrackingMode = 'ping';
+const DEFAULT_TRACKING_MODE: TrackingMode = 'fluid';
 
 export const DEFAULT_BUS_STATUS_OPTIONS: BusStatusVisibility = {
   active: true,
   idle: true,
-  stopped: false,
+  stopped: true,
 };
 
 const BUS_STATUS_KEYS = Object.keys(DEFAULT_BUS_STATUS_OPTIONS) as BusStatusCategory[];
@@ -224,6 +224,19 @@ export function SubHeader({
   };
 
   const getBusName = (bus: LiveBus, index: number) => bus.name || bus.id || `Bus ${index + 1}`;
+  const getBusMeta = (bus: LiveBus) => {
+    const routeName = bus.routeName?.trim();
+    if (routeName) return routeName;
+
+    if (bus.lastUpdated) {
+      return `Updated ${new Date(bus.lastUpdated).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+      })}`;
+    }
+
+    return 'Live location';
+  };
   const statusSortOrder: Record<BusStatusCategory, number> = { active: 0, idle: 1, stopped: 2 };
   const sortedBuses = buses
     .map((bus, index) => ({
@@ -232,7 +245,6 @@ export function SubHeader({
       statusCategory: getStatusCategory(bus.status),
       label: getBusName(bus, index),
     }))
-    .filter(({ statusCategory }) => statusCategory === 'active' || statusCategory === 'idle')
     .sort((a, b) => (
       statusSortOrder[a.statusCategory] - statusSortOrder[b.statusCategory] ||
       a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
@@ -329,7 +341,7 @@ export function SubHeader({
                 <span>{sortedBuses.length}</span>
               </div>
               {sortedBuses.length === 0 ? (
-                <div className="bus-list-empty">No active or idle buses</div>
+                <div className="bus-list-empty">No live buses</div>
               ) : (
                 sortedBuses.map(({ bus, index, statusCategory, label }) => {
                   const isShown = overlays.buses && busStatusOptions[statusCategory];
@@ -341,9 +353,7 @@ export function SubHeader({
                     >
                       <span className="bus-list-row__main">
                         <span className="bus-list-row__name">{label}</span>
-                        <span className="bus-list-row__meta">
-                          {bus.speed ?? 'N/A'} mph - {bus.heading ?? 'N/A'} deg
-                        </span>
+                        <span className="bus-list-row__meta">{getBusMeta(bus)}</span>
                       </span>
                       <span className={`bus-list-row__status bus-list-row__status--${statusCategory}`}>
                         {statusCategory === 'active' ? 'Active' : statusCategory === 'idle' ? 'Idle' : 'Stopped'}

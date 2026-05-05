@@ -1,8 +1,8 @@
-import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { GetBusIcon } from './busMarkers';
-import type { LiveBus, MarkerFocusHandler } from '../types/frontend';
+import { useBusMovementIcon } from './useBusMovementIcon';
+import type { LiveBus, MapPoint, MarkerFocusHandler } from '../types/frontend';
 
 type BusContextValue = {
   buses: LiveBus[];
@@ -88,13 +88,59 @@ type BusProps = {
   onMarkerFocus?: MarkerFocusHandler;
 };
 
-function getBusIconAddress(heading: LiveBus['heading']): string {
-  const h = Number(heading ?? 0);
+type LiveBusMarkerProps = {
+  bus: LiveBus;
+  onMarkerFocus?: MarkerFocusHandler;
+};
 
-  if (h >= 315 || h < 45) return 'busIconNorth';
-  if (h >= 45 && h < 135) return 'busIconEast';
-  if (h >= 135 && h < 225) return 'busIconSouth';
-  return 'busIconWest';
+function LiveBusMarker({ bus, onMarkerFocus }: LiveBusMarkerProps) {
+  const lat = Number(bus.lat);
+  const lng = Number(bus.lng);
+  const position = useMemo<MapPoint>(() => [lat, lng], [lat, lng]);
+  const busIcon = useBusMovementIcon(position, bus.heading);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return (
+    <Marker
+      position={position}
+      icon={busIcon}
+      bubblingMouseEvents={false}
+      zIndexOffset={1000}
+      eventHandlers={{
+        click: () => onMarkerFocus?.(position, 'marker'),
+      }}
+    >
+      <Popup className="campus-popup campus-popup--transit" minWidth={236} maxWidth={292} autoPan={false}>
+        <div className="info-popup-card info-popup-card--transit">
+          <span className="info-popup-card__eyebrow">Live bus</span>
+          <h3 className="info-popup-card__title">{bus.name || bus.id}</h3>
+          <div className="info-popup-card__data-grid">
+            <div className="info-popup-card__data-item">
+              <span className="info-popup-card__data-label">Status</span>
+              <span className="info-popup-card__data-value">{bus.status || 'Unknown'}</span>
+            </div>
+            {bus.routeName && (
+              <div className="info-popup-card__data-item">
+                <span className="info-popup-card__data-label">Route</span>
+                <span className="info-popup-card__data-value">{bus.routeName}</span>
+              </div>
+            )}
+            <div className="info-popup-card__data-item">
+              <span className="info-popup-card__data-label">Updated</span>
+              <span className="info-popup-card__data-value">
+                {bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}
+              </span>
+            </div>
+          </div>
+          {bus.address && <p className="info-popup-card__supporting">Address: {bus.address}</p>}
+          {bus.driver && <p className="info-popup-card__supporting">Driver: {bus.driver}</p>}
+        </div>
+      </Popup>
+    </Marker>
+  );
 }
 
 export const Bus = memo(function Bus({
@@ -107,51 +153,9 @@ export const Bus = memo(function Bus({
 
   return (
     <>
-      {buses.map((bus) => {
-          const lat = Number(bus.lat);
-          const lng = Number(bus.lng);
-          const iconAddress = getBusIconAddress(bus.heading);
-          
-          return (
-          <Marker
-            key={bus.id}
-            position={[lat, lng]}
-            icon={GetBusIcon(iconAddress)}
-            bubblingMouseEvents={false}
-            zIndexOffset={1000}
-            eventHandlers={{
-              click: () => onMarkerFocus?.([lat, lng], 'marker'),
-            }}
-          >
-            <Popup className="campus-popup campus-popup--transit" minWidth={236} maxWidth={292} autoPan={false}>
-              <div className="info-popup-card info-popup-card--transit">
-                <span className="info-popup-card__eyebrow">Live bus</span>
-                <h3 className="info-popup-card__title">{bus.name || bus.id}</h3>
-                <div className="info-popup-card__data-grid">
-                  <div className="info-popup-card__data-item">
-                    <span className="info-popup-card__data-label">Status</span>
-                    <span className="info-popup-card__data-value">{bus.status || 'Unknown'}</span>
-                  </div>
-                  <div className="info-popup-card__data-item">
-                    <span className="info-popup-card__data-label">Speed</span>
-                    <span className="info-popup-card__data-value">{bus.speed ?? 'N/A'} mph</span>
-                  </div>
-                  <div className="info-popup-card__data-item">
-                    <span className="info-popup-card__data-label">Heading</span>
-                    <span className="info-popup-card__data-value">{bus.heading ?? 'N/A'}°</span>
-                  </div>
-                  <div className="info-popup-card__data-item">
-                    <span className="info-popup-card__data-label">Updated</span>
-                    <span className="info-popup-card__data-value">{bus.lastUpdated ? new Date(bus.lastUpdated).toLocaleTimeString() : 'N/A'}</span>
-                  </div>
-                </div>
-                {bus.address && <p className="info-popup-card__supporting">Address: {bus.address}</p>}
-                {bus.driver && <p className="info-popup-card__supporting">Driver: {bus.driver}</p>}
-              </div>
-            </Popup>
-          </Marker>
-          );
-        })}
+      {buses.map((bus) => (
+        <LiveBusMarker key={bus.id} bus={bus} onMarkerFocus={onMarkerFocus} />
+      ))}
     </>
   );
 });

@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 're
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { BusContext } from './components/bus';
-import { GetBusIcon } from './components/busMarkers';
 import { BusStop } from './components/busStop';
 import { CampusLoopRoute } from './components/routes/campusLoopRoute';
 import { DowntownLoopRoute } from './components/routes/downtownLoopRoute';
@@ -19,6 +18,7 @@ import { Food } from './components/food';
 import { UserLocationMap } from './UserTracker';
 import { MapViewportController } from './components/MapViewportController';
 import { DEFAULT_BUS_STATUS_OPTIONS, DEFAULT_FOOD_OPTIONS } from './components/SubHeader';
+import { useBusMovementIcon } from './components/useBusMovementIcon';
 import type {
   BusStatusCategory,
   BusStatusVisibility,
@@ -80,20 +80,11 @@ const DEFAULT_ROUTE_VISIBILITY: RouteVisibility = {
 
 const CAMPUS_CENTER: MapPoint = [41.012, -76.448];
 const CAMPUS_ZOOM = 15.25;
-const BUS_MARKER_ANIMATION_MS = 240;
 const EMPTY_BUSES: LiveBus[] = [];
 const BLOOMSBURG_BOUNDS: [MapPoint, MapPoint] = [
   [40.9700, -76.5250],
   [41.0450, -76.4050],
 ];
-
-function getBusIconName(heading: LiveBus['heading']): string {
-  const normalizedHeading = ((Number(heading) || 0) % 360 + 360) % 360;
-  if (normalizedHeading >= 315 || normalizedHeading < 45) return 'busIconNorth';
-  if (normalizedHeading >= 45 && normalizedHeading < 135) return 'busIconEast';
-  if (normalizedHeading >= 135 && normalizedHeading < 225) return 'busIconSouth';
-  return 'busIconWest';
-}
 
 function getDisplayBus(bus: LiveBus, trackingMode: TrackingMode): LiveBus {
   if (trackingMode === 'ping') {
@@ -125,82 +116,24 @@ type DynamicBusMarkerProps = {
 };
 
 function DynamicBusMarker({ bus, onMarkerFocus }: DynamicBusMarkerProps) {
-  const markerRef = useRef<L.Marker | null>(null);
-  const animationRef = useRef<number | null>(null);
-  const positionRef = useRef<MapPoint>([Number(bus.lat), Number(bus.lng)]);
-  const busIcon = useMemo(() => GetBusIcon(getBusIconName(bus.heading)), [bus.heading]);
+  const lat = Number(bus.lat);
+  const lng = Number(bus.lng);
+  const position = useMemo<MapPoint>(() => [lat, lng], [lat, lng]);
+  const busIcon = useBusMovementIcon(position, bus.heading);
 
-  useEffect(() => () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-  }, []);
-
-  useEffect(() => {
-    const marker = markerRef.current;
-    const nextLat = Number(bus.lat);
-    const nextLng = Number(bus.lng);
-
-    if (!Number.isFinite(nextLat) || !Number.isFinite(nextLng)) {
-      return undefined;
-    }
-
-    if (!marker) {
-      positionRef.current = [nextLat, nextLng];
-      return undefined;
-    }
-
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-
-    const start = marker.getLatLng();
-    const startLat = start.lat;
-    const startLng = start.lng;
-
-    if (Math.abs(startLat - nextLat) < 0.000001 && Math.abs(startLng - nextLng) < 0.000001) {
-      marker.setLatLng([nextLat, nextLng]);
-      positionRef.current = [nextLat, nextLng];
-      return undefined;
-    }
-
-    const startedAt = performance.now();
-    const animate = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / BUS_MARKER_ANIMATION_MS);
-      marker.setLatLng([
-        startLat + ((nextLat - startLat) * progress),
-        startLng + ((nextLng - startLng) * progress),
-      ]);
-
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      positionRef.current = [nextLat, nextLng];
-      animationRef.current = null;
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-    };
-  }, [bus.lat, bus.lng]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
 
   return (
     <Marker
-      ref={markerRef}
       key={bus.id}
-      position={positionRef.current}
+      position={position}
       icon={busIcon}
       bubblingMouseEvents={false}
       zIndexOffset={1000}
       eventHandlers={{
-        click: () => onMarkerFocus?.([Number(bus.lat), Number(bus.lng)], 'marker'),
+        click: () => onMarkerFocus?.(position, 'marker'),
       }}
     >
       <Popup className="campus-popup campus-popup--transit" minWidth={236} maxWidth={292} autoPan={false}>
@@ -212,14 +145,12 @@ function DynamicBusMarker({ bus, onMarkerFocus }: DynamicBusMarkerProps) {
               <span className="info-popup-card__data-label">Status</span>
               <span className="info-popup-card__data-value">{bus.status || 'Unknown'}</span>
             </div>
-            <div className="info-popup-card__data-item">
-              <span className="info-popup-card__data-label">Speed</span>
-              <span className="info-popup-card__data-value">{bus.speed ?? 'N/A'} mph</span>
-            </div>
-            <div className="info-popup-card__data-item">
-              <span className="info-popup-card__data-label">Heading</span>
-              <span className="info-popup-card__data-value">{bus.heading ?? 'N/A'} deg</span>
-            </div>
+            {bus.routeName && (
+              <div className="info-popup-card__data-item">
+                <span className="info-popup-card__data-label">Route</span>
+                <span className="info-popup-card__data-value">{bus.routeName}</span>
+              </div>
+            )}
             <div className="info-popup-card__data-item">
               <span className="info-popup-card__data-label">Updated</span>
               <span className="info-popup-card__data-value">
@@ -245,7 +176,7 @@ function App() {
   const [showRoutes, setShowRoutes] = useState(true);
   const [routeVisibility, setRouteVisibility] = useState<RouteVisibility>(DEFAULT_ROUTE_VISIBILITY);
   const [busStatusVisibility, setBusStatusVisibility] = useState<BusStatusVisibility>(DEFAULT_BUS_STATUS_OPTIONS);
-  const [trackingMode, setTrackingMode] = useState<TrackingMode>('ping');
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>('fluid');
   const [zoom, setZoom] = useState(CAMPUS_ZOOM);
   const [userPos, setUserPos] = useState<MapPoint | null>(null);
   const [focusTarget, setFocusTarget] = useState<MapFocusTarget>({

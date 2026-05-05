@@ -44,6 +44,10 @@ export type LiveBus = {
   address?: string | null;
   driver?: string | null;
   rawLastUpdated?: string | null;
+  displayTimestamp?: string | null;
+  isSmoothed?: boolean | null;
+  routeName?: string | null;
+  distanceToRouteMeters?: number | string | null;
   pingLat?: number | string | null;
   pingLng?: number | string | null;
   pingHeading?: number | string | null;

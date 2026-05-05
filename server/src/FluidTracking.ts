@@ -5,6 +5,7 @@ interface BusSample {
     timestampMs: number;
     receivedAtMs: number;
     location: VehicleLocation;
+    displayStatus: VehicleLocation['Status'];
     routeName?: string;
     routeProgressMeters?: number;
     snappedPoint?: LatLng;
@@ -18,7 +19,16 @@ export interface FluidTrackingOptions {
     routeCaptureDistanceMeters?: number;
     routeReleaseDistanceMeters?: number;
     adaptiveDelayBufferMs?: number;
+    minAdaptiveDelayMs?: number;
+    maxAdaptiveDelayMs?: number;
 }
+
+type LastDisplayLocation = {
+    location: VehicleLocation;
+    emittedAtMs: number;
+};
+
+const MIN_MOVING_SAMPLE_DISTANCE_METERS = 6;
 
 export class FluidTrackingEngine {
     private readonly routes: BusRoute[];
@@ -29,7 +39,10 @@ export class FluidTrackingEngine {
     private readonly routeCaptureDistanceMeters: number;
     private readonly routeReleaseDistanceMeters: number;
     private readonly adaptiveDelayBufferMs: number;
+    private readonly minAdaptiveDelayMs: number;
+    private readonly maxAdaptiveDelayMs: number;
     private readonly historyByBus = new Map<string, BusSample[]>();
+    private readonly lastDisplayByBus = new Map<string, LastDisplayLocation>();
 
     constructor(routes: BusRoute[], options: FluidTrackingOptions = {}) {
         this.routes = routes;
@@ -41,6 +54,11 @@ export class FluidTrackingEngine {
         this.routeCaptureDistanceMeters = options.routeCaptureDistanceMeters ?? 225;
         this.routeReleaseDistanceMeters = options.routeReleaseDistanceMeters ?? 325;
         this.adaptiveDelayBufferMs = options.adaptiveDelayBufferMs ?? 2_000;
+        this.minAdaptiveDelayMs = Math.max(0, options.minAdaptiveDelayMs ?? 5_000);
+        this.maxAdaptiveDelayMs = Math.max(
+            this.minAdaptiveDelayMs,
+            options.maxAdaptiveDelayMs ?? Math.max(this.delayMs * 4, 120_000)
+        );
     }
 
     ingestLocations(locations: VehicleLocation[]): void {
@@ -48,6 +66,7 @@ export class FluidTrackingEngine {
         for (const location of locations) {
             const id = location.VehicleNumber;
             if (!id) continue;
+            if (!this.isValidLocation(location)) continue;
 
             const parsedTs = this.parseProviderTimestamp(location.LastUpdated, now);
             const existing = this.historyByBus.get(id) ?? [];
@@ -120,11 +139,13 @@ export class FluidTrackingEngine {
                 timestampMs: timestamp,
                 receivedAtMs,
                 location,
+                displayStatus: location.Status,
                 routeName,
                 routeProgressMeters,
                 snappedPoint,
                 distanceToRouteMeters
             };
+            sample.displayStatus = this.getDisplayStatus(location.Status, previous, sample);
 
             const dupIndex = existing.findIndex(item => item.timestampMs === sample.timestampMs);
             if (dupIndex >= 0) {
@@ -180,26 +201,45 @@ export class FluidTrackingEngine {
     getDisplayLocations(nowMs = Date.now()): VehicleLocation[] {
         const smoothed: VehicleLocation[] = [];
 
-        this.historyByBus.forEach((samples) => {
+        this.historyByBus.forEach((samples, busId) => {
             if (samples.length === 0) return;
+
+            this.pruneExpiredSamples(samples, nowMs);
+            if (samples.length === 0) {
+                this.historyByBus.delete(busId);
+                this.lastDisplayByBus.delete(busId);
+                return;
+            }
 
             const effectiveDelay = this.computeEffectiveDelayMs(samples);
             const targetTs = nowMs - effectiveDelay;
 
             const pair = this.findBracketSamples(samples, targetTs);
-            if (!pair) return;
-
-            const { prev, next } = pair;
-
-            if (prev.timestampMs === next.timestampMs) {
-                smoothed.push(this.sampleToDisplayLocation(prev, prev.timestampMs, prev));
+            if (!pair) {
+                const fallback = this.getRecentDisplayFallback(busId, nowMs);
+                if (fallback) smoothed.push(fallback);
                 return;
             }
 
-            const segmentDurationMs = Math.max(next.timestampMs - prev.timestampMs, 1);
-            const ratio = Math.max(0, Math.min(1, (targetTs - prev.timestampMs) / segmentDurationMs));
+            const { prev, next } = pair;
+            let displayLocation: VehicleLocation;
 
-            smoothed.push(this.interpolateSamples(prev, next, ratio, targetTs));
+            if (prev.timestampMs === next.timestampMs) {
+                displayLocation = this.sampleToDisplayLocation(prev, prev.timestampMs, prev);
+            } else {
+                const segmentDurationMs = Math.max(next.timestampMs - prev.timestampMs, 1);
+                const ratio = Math.max(0, Math.min(1, (targetTs - prev.timestampMs) / segmentDurationMs));
+                displayLocation = this.interpolateSamples(prev, next, ratio, targetTs);
+            }
+
+            if (this.isValidLocation(displayLocation)) {
+                this.lastDisplayByBus.set(busId, { location: displayLocation, emittedAtMs: nowMs });
+                smoothed.push(displayLocation);
+                return;
+            }
+
+            const fallback = this.getRecentDisplayFallback(busId, nowMs);
+            if (fallback) smoothed.push(fallback);
         });
 
         return smoothed;
@@ -261,6 +301,7 @@ export class FluidTrackingEngine {
 
         const heading = this.interpolateAngle(prev.location.Heading, next.location.Heading, ratio);
         const speed = prev.location.Speed + (next.location.Speed - prev.location.Speed) * ratio;
+        const status = this.getDisplayStatus(next.location.Status, prev, next);
 
         return {
             ...next.location,
@@ -268,6 +309,7 @@ export class FluidTrackingEngine {
             Longitude: longitude,
             Heading: heading,
             Speed: Number(speed.toFixed(1)),
+            Status: status,
             LastUpdated: new Date(displayTs).toISOString(),
             RawLastUpdated: next.location.LastUpdated,
             RouteName: routeName ?? next.routeName ?? prev.routeName,
@@ -344,6 +386,7 @@ export class FluidTrackingEngine {
             ...sample.location,
             Latitude: sample.routeName ? (sample.snappedPoint?.lat ?? sample.location.Latitude) : sample.location.Latitude,
             Longitude: sample.routeName ? (sample.snappedPoint?.lng ?? sample.location.Longitude) : sample.location.Longitude,
+            Status: sample.displayStatus,
             LastUpdated: new Date(displayTs).toISOString(),
             RawLastUpdated: source.location.LastUpdated,
             RouteName: sample.routeName,
@@ -376,27 +419,20 @@ export class FluidTrackingEngine {
     }
 
     private computeEffectiveDelayMs(samples: BusSample[]): number {
-        if (samples.length < 3) {
-            return this.delayMs;
-        }
-
         const intervals: number[] = [];
         for (let i = 1; i < samples.length; i += 1) {
             const diff = samples[i].receivedAtMs - samples[i - 1].receivedAtMs;
-            if (diff > 0) {
+            if (diff > 0 && diff <= this.maxSampleAgeMs) {
                 intervals.push(diff);
             }
         }
 
         if (intervals.length === 0) {
-            return this.delayMs;
+            return this.clampDelayMs(this.delayMs);
         }
 
-        const sorted = [...intervals].sort((a, b) => a - b);
-        const p90 = sorted[Math.floor((sorted.length - 1) * 0.9)];
-        const recentMax = Math.max(...intervals.slice(-6));
-        const adaptiveDelay = Math.max(p90, recentMax) + this.adaptiveDelayBufferMs;
-        return Math.max(this.delayMs, adaptiveDelay);
+        const latestIntervalMs = intervals[intervals.length - 1];
+        return this.clampDelayMs(latestIntervalMs + this.adaptiveDelayBufferMs);
     }
 
     private interpolateAngle(startDeg: number, endDeg: number, ratio: number): number {
@@ -406,5 +442,98 @@ export class FluidTrackingEngine {
         if (delta > 180) delta -= 360;
         if (delta < -180) delta += 360;
         return (a + delta * ratio + 360) % 360;
+    }
+
+    private clampDelayMs(value: number): number {
+        if (!Number.isFinite(value)) {
+            return this.minAdaptiveDelayMs;
+        }
+
+        return Math.max(this.minAdaptiveDelayMs, Math.min(this.maxAdaptiveDelayMs, value));
+    }
+
+    private getDisplayStatus(
+        providerStatus: VehicleLocation['Status'],
+        previous: BusSample | undefined,
+        current: BusSample
+    ): VehicleLocation['Status'] {
+        if (!previous) {
+            return providerStatus;
+        }
+
+        const elapsedMs = current.receivedAtMs - previous.receivedAtMs;
+        if (elapsedMs <= 0 || elapsedMs > this.maxSampleAgeMs) {
+            return providerStatus;
+        }
+
+        const movementMeters = this.getSampleMovementMeters(previous, current);
+        if (movementMeters >= MIN_MOVING_SAMPLE_DISTANCE_METERS) {
+            return 'Moving';
+        }
+
+        return providerStatus;
+    }
+
+    private getSampleMovementMeters(previous: BusSample, current: BusSample): number {
+        if (
+            previous.routeName &&
+            current.routeName &&
+            previous.routeName === current.routeName &&
+            previous.routeProgressMeters != null &&
+            current.routeProgressMeters != null
+        ) {
+            const route = this.routeByName.get(current.routeName);
+            const total = route?.getTotalMeters() ?? 0;
+            return Math.abs(this.resolveRouteDeltaMeters(
+                previous.routeProgressMeters,
+                current.routeProgressMeters,
+                total
+            ));
+        }
+
+        return this.distanceMeters(
+            { lat: previous.location.Latitude, lng: previous.location.Longitude },
+            { lat: current.location.Latitude, lng: current.location.Longitude }
+        );
+    }
+
+    private distanceMeters(a: LatLng, b: LatLng): number {
+        const earthRadiusMeters = 6_371_000;
+        const toRadians = (value: number) => (value * Math.PI) / 180;
+        const dLat = toRadians(b.lat - a.lat);
+        const dLng = toRadians(b.lng - a.lng);
+        const lat1 = toRadians(a.lat);
+        const lat2 = toRadians(b.lat);
+        const h =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+        return 2 * earthRadiusMeters * Math.asin(Math.sqrt(h));
+    }
+
+    private pruneExpiredSamples(samples: BusSample[], nowMs: number): void {
+        const minAllowedTs = nowMs - this.maxSampleAgeMs;
+        let firstValidIndex = 0;
+        while (firstValidIndex < samples.length && samples[firstValidIndex].timestampMs < minAllowedTs) {
+            firstValidIndex += 1;
+        }
+        if (firstValidIndex > 0) {
+            samples.splice(0, firstValidIndex);
+        }
+    }
+
+    private getRecentDisplayFallback(busId: string, nowMs: number): VehicleLocation | null {
+        const fallback = this.lastDisplayByBus.get(busId);
+        if (!fallback) return null;
+        if (nowMs - fallback.emittedAtMs > this.maxSampleAgeMs) {
+            this.lastDisplayByBus.delete(busId);
+            return null;
+        }
+
+        return fallback.location;
+    }
+
+    private isValidLocation(location: VehicleLocation): boolean {
+        return Number.isFinite(location.Latitude) && Number.isFinite(location.Longitude);
     }
 }
