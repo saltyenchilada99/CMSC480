@@ -18,7 +18,6 @@ export interface FluidTrackingOptions {
     routeCaptureDistanceMeters?: number;
     routeReleaseDistanceMeters?: number;
     adaptiveDelayBufferMs?: number;
-    minInterpolationDurationMs?: number;
 }
 
 export class FluidTrackingEngine {
@@ -30,7 +29,6 @@ export class FluidTrackingEngine {
     private readonly routeCaptureDistanceMeters: number;
     private readonly routeReleaseDistanceMeters: number;
     private readonly adaptiveDelayBufferMs: number;
-    private readonly minInterpolationDurationMs: number;
     private readonly historyByBus = new Map<string, BusSample[]>();
 
     constructor(routes: BusRoute[], options: FluidTrackingOptions = {}) {
@@ -43,7 +41,6 @@ export class FluidTrackingEngine {
         this.routeCaptureDistanceMeters = options.routeCaptureDistanceMeters ?? 225;
         this.routeReleaseDistanceMeters = options.routeReleaseDistanceMeters ?? 325;
         this.adaptiveDelayBufferMs = options.adaptiveDelayBufferMs ?? 2_000;
-        this.minInterpolationDurationMs = options.minInterpolationDurationMs ?? 30_000;
     }
 
     ingestLocations(locations: VehicleLocation[]): void {
@@ -76,18 +73,28 @@ export class FluidTrackingEngine {
             const receivedAtMs = now;
             timestamp = Math.max(receivedAtMs, lastTs + 1);
 
-            const point = { lat: location.Latitude, lng: location.Longitude };
-            const nearest = findBestMatchingRoute(this.routes, point, false);
-
             const previous = existing.length > 0 ? existing[existing.length - 1] : undefined;
             const previousRouteName = previous?.routeName;
+            const point = { lat: location.Latitude, lng: location.Longitude };
+            const stickyRoute = previousRouteName ? this.routeByName.get(previousRouteName) : undefined;
+            const stickyProjection = stickyRoute?.project(point);
+            const nearest = findBestMatchingRoute(this.routes, point, false);
 
             let routeName: string | undefined;
             let routeProgressMeters: number | undefined;
             let snappedPoint: LatLng | undefined;
             let distanceToRouteMeters: number | undefined;
 
-            if (nearest.route && nearest.projection) {
+            if (
+                stickyRoute &&
+                stickyProjection &&
+                stickyProjection.distanceToRouteMeters <= Math.max(stickyRoute.boundaryMeters, this.routeReleaseDistanceMeters)
+            ) {
+                routeName = stickyRoute.name;
+                routeProgressMeters = stickyProjection.progressMeters;
+                snappedPoint = stickyProjection.snappedPoint;
+                distanceToRouteMeters = stickyProjection.distanceToRouteMeters;
+            } else if (nearest.route && nearest.projection) {
                 const captureDistance = Math.max(
                     nearest.route.boundaryMeters,
                     this.routeCaptureDistanceMeters
@@ -99,8 +106,7 @@ export class FluidTrackingEngine {
 
                 const distance = nearest.projection.distanceToRouteMeters;
                 const inCapture = distance <= captureDistance;
-                const stickyOnSameRoute =
-                    previousRouteName === nearest.route.name && distance <= releaseDistance;
+                const stickyOnSameRoute = previousRouteName === nearest.route.name && distance <= releaseDistance;
 
                 if (inCapture || stickyOnSameRoute) {
                     routeName = nearest.route.name;
@@ -190,12 +196,7 @@ export class FluidTrackingEngine {
                 return;
             }
 
-            const segmentDurationMs = Math.max(
-                next.timestampMs - prev.timestampMs,
-                this.minInterpolationDurationMs,
-                1
-            );
-
+            const segmentDurationMs = Math.max(next.timestampMs - prev.timestampMs, 1);
             const ratio = Math.max(0, Math.min(1, (targetTs - prev.timestampMs) / segmentDurationMs));
 
             smoothed.push(this.interpolateSamples(prev, next, ratio, targetTs));
@@ -235,36 +236,27 @@ export class FluidTrackingEngine {
     }
 
     private interpolateSamples(prev: BusSample, next: BusSample, ratio: number, displayTs: number): VehicleLocation {
-        const sameRoute = prev.routeName && next.routeName && prev.routeName === next.routeName;
+        const routeMatch = this.getRouteInterpolationMatch(prev, next);
         let latitude = prev.location.Latitude + (next.location.Latitude - prev.location.Latitude) * ratio;
         let longitude = prev.location.Longitude + (next.location.Longitude - prev.location.Longitude) * ratio;
         let distanceToRouteMeters: number | undefined;
+        let routeName: string | undefined;
 
-        if (
-            sameRoute &&
-            prev.routeProgressMeters != null &&
-            next.routeProgressMeters != null &&
-            prev.distanceToRouteMeters != null &&
-            next.distanceToRouteMeters != null &&
-            prev.distanceToRouteMeters <= this.routeReleaseDistanceMeters &&
-            next.distanceToRouteMeters <= this.routeReleaseDistanceMeters
-        ) {
-            const routeName = prev.routeName;
-            const route = routeName ? this.routeByName.get(routeName) : undefined;
-            if (route) {
-                const total = route.getTotalMeters();
-                const start = prev.routeProgressMeters;
-                const end = next.routeProgressMeters;
-                const elapsedMs = Math.max(1, next.timestampMs - prev.timestampMs);
-                const delta = this.resolveRouteDeltaMeters(start, end, total, prev, next, elapsedMs);
-                const progress = start + delta * ratio;
-                const snapped = route.interpolateProgress(progress);
-                latitude = snapped.lat;
-                longitude = snapped.lng;
+        if (routeMatch) {
+            routeName = routeMatch.route.name;
+            const total = routeMatch.route.getTotalMeters();
+            const delta = this.resolveRouteDeltaMeters(
+                routeMatch.prevProgressMeters,
+                routeMatch.nextProgressMeters,
+                total
+            );
+            const progress = routeMatch.prevProgressMeters + delta * ratio;
+            const snapped = routeMatch.route.interpolateProgress(progress);
+            latitude = snapped.lat;
+            longitude = snapped.lng;
 
-                const bestMatch = findBestMatchingRoute([route], snapped, false);
-                distanceToRouteMeters = bestMatch.projection?.distanceToRouteMeters;
-            }
+            const bestMatch = findBestMatchingRoute([routeMatch.route], snapped, false);
+            distanceToRouteMeters = bestMatch.projection?.distanceToRouteMeters;
         }
 
         const heading = this.interpolateAngle(prev.location.Heading, next.location.Heading, ratio);
@@ -278,10 +270,72 @@ export class FluidTrackingEngine {
             Speed: Number(speed.toFixed(1)),
             LastUpdated: new Date(displayTs).toISOString(),
             RawLastUpdated: next.location.LastUpdated,
-            RouteName: sameRoute ? prev.routeName : (next.routeName ?? prev.routeName),
+            RouteName: routeName ?? next.routeName ?? prev.routeName,
             IsSmoothed: true,
             DisplayTimestamp: new Date(displayTs).toISOString(),
             DistanceToRouteMeters: distanceToRouteMeters
+        };
+    }
+
+    private getRouteInterpolationMatch(
+        prev: BusSample,
+        next: BusSample
+    ): {
+        route: BusRoute;
+        prevProgressMeters: number;
+        nextProgressMeters: number;
+    } | null {
+        const candidateNames = [prev.routeName, next.routeName]
+            .filter((routeName): routeName is string => typeof routeName === 'string');
+        const uniqueCandidateNames = Array.from(new Set(candidateNames));
+
+        for (const routeName of uniqueCandidateNames) {
+            const route = this.routeByName.get(routeName);
+            if (!route) continue;
+
+            const prevProjection = this.getSampleProjectionOnRoute(prev, route);
+            const nextProjection = this.getSampleProjectionOnRoute(next, route);
+
+            if (!prevProjection || !nextProjection) continue;
+
+            return {
+                route,
+                prevProgressMeters: prevProjection.progressMeters,
+                nextProgressMeters: nextProjection.progressMeters
+            };
+        }
+
+        return null;
+    }
+
+    private getSampleProjectionOnRoute(
+        sample: BusSample,
+        route: BusRoute
+    ): { progressMeters: number; distanceToRouteMeters: number } | null {
+        if (
+            sample.routeName === route.name &&
+            sample.routeProgressMeters != null &&
+            sample.distanceToRouteMeters != null &&
+            sample.distanceToRouteMeters <= this.routeReleaseDistanceMeters
+        ) {
+            return {
+                progressMeters: sample.routeProgressMeters,
+                distanceToRouteMeters: sample.distanceToRouteMeters
+            };
+        }
+
+        const projection = route.project({
+            lat: sample.location.Latitude,
+            lng: sample.location.Longitude
+        });
+
+        if (projection.distanceToRouteMeters > Math.max(route.boundaryMeters, this.routeReleaseDistanceMeters)) {
+            return null;
+        }
+
+        return {
+            progressMeters: projection.progressMeters,
+            distanceToRouteMeters: projection.distanceToRouteMeters
         };
     }
 
@@ -302,10 +356,7 @@ export class FluidTrackingEngine {
     private resolveRouteDeltaMeters(
         start: number,
         end: number,
-        totalMeters: number,
-        prev: BusSample,
-        next: BusSample,
-        elapsedMs: number
+        totalMeters: number
     ): number {
         if (totalMeters <= 0) {
             return end - start;
@@ -319,17 +370,6 @@ export class FluidTrackingEngine {
             delta -= totalMeters;
         } else if (delta < -totalMeters / 2) {
             delta += totalMeters;
-        }
-
-        // Clamp movement to a physically plausible distance based on bus speed
-        // over the sample interval, with a safety multiplier for noisy speed data.
-        const avgMph = Math.max(0, (prev.location.Speed + next.location.Speed) / 2);
-        const avgMetersPerSecond = avgMph * 0.44704;
-        const intervalSeconds = elapsedMs / 1000;
-        const plausibleMeters = Math.max(25, avgMetersPerSecond * intervalSeconds * 2.5);
-
-        if (Math.abs(delta) > plausibleMeters) {
-            delta = Math.sign(delta) * plausibleMeters;
         }
 
         return delta;

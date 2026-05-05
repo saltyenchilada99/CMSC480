@@ -7,44 +7,27 @@ import { academicBuildings } from './Academic.tsx';
 import { recreationLocations } from './Recreation.tsx';
 import { foodLocations } from './food.tsx';
 
-
-export function Header({ connectionStatus, buses, onMarkerFocus }) {
+export function Header({ onMarkerFocus }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showBusList, setShowBusList] = useState(false);
-  const activeBuses = buses.filter(bus => bus.status !== "Stopped");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const filteredItems = busStopLibrary.filter((stop) =>
-  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
-
-  const filteredItems2 = dormLocations.filter((stop) =>
-  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
-
-  const filteredItems3 = academicBuildings.filter((stop) =>
-  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
-
-  const filteredItems4 = recreationLocations.filter((stop) =>
-  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
-
-  const filteredItems5 = foodLocations.filter((stop) =>
-  stop.name.toLowerCase().includes(query.toLowerCase().trim()));
-
+  const normalizedQuery = query.toLowerCase().trim();
   const allFilteredItems = [
-    ...filteredItems,
-    ...filteredItems2,
-    ...filteredItems3,
-    ...filteredItems4,
-    ...filteredItems5
-  ];
+    ...busStopLibrary,
+    ...dormLocations,
+    ...academicBuildings,
+    ...recreationLocations,
+    ...foodLocations,
+  ].filter((loc) => loc.name.toLowerCase().includes(normalizedQuery));
 
-  // add/remove class on body for modal open state
   React.useEffect(() => {
     if (showScheduleModal) {
       document.body.classList.add('modal-open');
     } else {
       document.body.classList.remove('modal-open');
     }
+
     return () => document.body.classList.remove('modal-open');
   }, [showScheduleModal]);
 
@@ -53,7 +36,6 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
 
     setQuery(loc.name);
     setShowDropdown(false);
-
     onMarkerFocus?.(position, 'marker', 18);
   }
 
@@ -64,15 +46,6 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
           <div className="header-title">
             <h1>Bloomsburg Campus Bus Tracker</h1>
           </div>
-
-          <nav className="header-nav">
-            <button
-              className="nav-button"
-              onClick={() => setShowScheduleModal(true)}
-            >
-              Bus Schedule
-            </button>
-          </nav>
 
           <div
             className="search-container"
@@ -106,52 +79,37 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
             )}
           </div>
 
-          {/* Live Connection of Buses */}
-          <div className={`status-badge ${connectionStatus === 'Live' ? 'live' : 'offline'}`}
-            onMouseEnter={() => setShowBusList(true)}
-            onMouseLeave={() => setShowBusList(false)}
-          >
-            <span className="status-dot"></span>
-            {connectionStatus} {buses.length > 0 ? `· ${buses.length} bus${buses.length !== 1 ? 'es' : ''}` : ''}
-
-            {showBusList && (
-              <div className="bus-list-dropdown">
-                {activeBuses.length === 0 ? (
-                  <div className="bus-list-item">No active buses</div>
-                ) : (
-                  activeBuses.map((bus, index) => (
-                    <div key={index} className="bus-list-item">
-                      {bus.id || index + 1}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+          <nav className="header-nav">
+            <button
+              className="nav-button"
+              onClick={() => setShowScheduleModal(true)}
+            >
+              Bus Schedule
+            </button>
+          </nav>
         </div>
       </header>
 
-      {/* Bus Schedule Modal — rendered via portal to escape header stacking context */}
       {showScheduleModal && ReactDOM.createPortal(
         <div className="modal-overlay" onClick={() => setShowScheduleModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Bus Schedule</h2>
-              <button className="modal-close" onClick={() => setShowScheduleModal(false)}>×</button>
+              <button className="modal-close" onClick={() => setShowScheduleModal(false)}>x</button>
             </div>
             <div className="modal-body">
               <div className="schedule-section">
                 <h3>Campus Loop</h3>
-                <p><strong>Monday – Friday:</strong> 7:30 a.m. – midnight. Buses arrive approximately every 15 minutes</p>
-                <p><strong>Saturday (New Hours):</strong> 11:30 a.m. – 6:30 p.m. – Buses arrive approximately every 20 minutes. Last bus departs at 6:30 p.m. (NO SERVICE FROM 2:00 – 2:45 p.m. and 4:45 – 5:30 p.m.)</p>
-                <p><strong>Sunday (New Hours):</strong> 11:30 a.m. – midnight. Buses arrive approximately every 20 minutes. Last bus departs at midnight (NO SERVICE FROM 2:00 – 2:45 p.m., 6:45 – 7:30 p.m., and 9:00 – 9:45 p.m.)</p>
+                <p><strong>Monday - Friday:</strong> 7:30 a.m. - midnight. Buses arrive approximately every 15 minutes</p>
+                <p><strong>Saturday (New Hours):</strong> 11:30 a.m. - 6:30 p.m. Buses arrive approximately every 20 minutes. Last bus departs at 6:30 p.m. (NO SERVICE FROM 2:00 - 2:45 p.m. and 4:45 - 5:30 p.m.)</p>
+                <p><strong>Sunday (New Hours):</strong> 11:30 a.m. - midnight. Buses arrive approximately every 20 minutes. Last bus departs at midnight (NO SERVICE FROM 2:00 - 2:45 p.m., 6:45 - 7:30 p.m., and 9:00 - 9:45 p.m.)</p>
               </div>
 
               <div className="schedule-section">
                 <h3>Downtown Loop</h3>
                 <p><strong>Route:</strong> McCormick / Fountain / Old School House Apartments / Glenn Avenue Apartments</p>
-                <p><strong>Monday – Thursday:</strong> 7:30 a.m. – midnight. Departs McCormick at 7:30 a.m. and on the half hour and hour. Last bus departs at midnight (NO SERVICE AT 10:00 a.m.)</p>
-                <p><strong>Friday – Scheduled Service:</strong> 7:30 a.m. – 4:30 p.m. Departs McCormick at 7:30 a.m. and on the half hour and hour. Last bus departs at 4:30 p.m. (NO SERVICE AT 10:00 a.m.)</p>
+                <p><strong>Monday - Thursday:</strong> 7:30 a.m. - midnight. Departs McCormick at 7:30 a.m. and on the half hour and hour. Last bus departs at midnight (NO SERVICE AT 10:00 a.m.)</p>
+                <p><strong>Friday - Scheduled Service:</strong> 7:30 a.m. - 4:30 p.m. Departs McCormick at 7:30 a.m. and on the half hour and hour. Last bus departs at 4:30 p.m. (NO SERVICE AT 10:00 a.m.)</p>
                 <p><strong>Saturday &amp; Sunday:</strong> NO SERVICE</p>
               </div>
 
@@ -163,7 +121,8 @@ export function Header({ connectionStatus, buses, onMarkerFocus }) {
               </div>
             </div>
             <div className="modal-footer">
-              <a href="https://www.commonwealthu.edu/campus-life/bloomsburg/parking-and-transportation"
+              <a
+                href="https://www.commonwealthu.edu/campus-life/bloomsburg/parking-and-transportation"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="modal-link"

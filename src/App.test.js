@@ -15,7 +15,12 @@ jest.mock('react-leaflet', () => {
   return {
     MapContainer: ({ children }) => React.createElement('div', { 'data-testid': 'map-container' }, children),
     TileLayer: () => null,
-    useMapEvents: jest.fn(),
+    LayerGroup: ({ children }) => React.createElement('div', null, children),
+    useMap: () => ({
+      hasLayer: jest.fn(() => false),
+      addLayer: jest.fn(),
+      removeLayer: jest.fn(),
+    }),
   };
 });
 

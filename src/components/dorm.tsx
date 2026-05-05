@@ -15,7 +15,7 @@ type DormLocation = {
     link: string;
 };
 
-const minZoom : number = 18;
+const minZoom : number = 17;
 
 export const dormLocations: DormLocation[] = [{
     name: "Columbia Hall",
